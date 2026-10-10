@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Своя иконка: навес ярмарочного прилавка -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <!-- навес -->
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M30,40 L78,40 L82,52 Q82,58 76,58 Q70,58 70,52 Q70,58 64,58 Q58,58 58,52 Q58,58 52,58 Q46,58 46,52 Q46,58 40,58 Q34,58 34,52 Q34,58 28,58 Q22,58 26,52 Z" />
+    <!-- прилавок -->
+    <path android:fillColor="#FFFFFFFF"
+        android:pathData="M32,62 L36,62 L36,72 L72,72 L72,62 L76,62 L76,76 L32,76 Z" />
+</vector>
