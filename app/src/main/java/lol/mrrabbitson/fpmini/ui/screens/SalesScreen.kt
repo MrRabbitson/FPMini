@@ -52,7 +52,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import lol.mrrabbitson.fpmini.core.Order
 import lol.mrrabbitson.fpmini.core.OrderStatus
-import lol.mrrabbitson.fpmini.data.Repository
+import lol.mrrabbitson.fpmini.data.SalesStore
+import androidx.compose.runtime.collectAsState
 import lol.mrrabbitson.fpmini.data.Stats
 import lol.mrrabbitson.fpmini.ui.Card
 import lol.mrrabbitson.fpmini.ui.Chip
@@ -104,11 +105,9 @@ internal fun StatCell(label: String, value: String, sub: String? = null, modifie
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SalesScreen(repo: Repository, onOrder: (id: String) -> Unit) {
+fun SalesScreen(store: SalesStore, onOrder: (id: String) -> Unit) {
     val c = Ym.colors
-    var progress by remember { mutableIntStateOf(0) }
-    var force by remember { mutableStateOf(false) }
-    val state = rememberLoad("all_orders") { repo.allOrders(force) { progress = it }.also { force = false } }
+    val st by store.state.collectAsState()
 
     var query by rememberSaveable { mutableStateOf("") }
     var period by rememberSaveable { mutableStateOf(Period.ALL) }
@@ -119,19 +118,19 @@ fun SalesScreen(repo: Repository, onOrder: (id: String) -> Unit) {
 
     Column(Modifier.fillMaxSize().background(c.bg)) {
         TopBar("Мои продажи", actions = {
-            IconButton(onClick = { force = true; progress = 0; state.refresh() }) { Icon(Icons.Filled.Refresh, "Обновить", tint = c.text) }
+            IconButton(onClick = { store.refresh() }) { Icon(Icons.Filled.Refresh, "Обновить", tint = c.text) }
         })
 
-        val all = state.data
+        val all = st.orders
         when {
-            all == null && state.loading -> Column(
+            all == null && st.error == null -> Column(
                 Modifier.fillMaxSize(), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 CircularProgressIndicator(color = c.accent, modifier = Modifier.size(28.dp), strokeWidth = 2.5.dp)
                 Spacer(Modifier.height(10.dp))
-                Text(if (progress > 0) "Загружено заказов: $progress" else "Загружаю продажи…", color = c.textMuted, fontSize = 13.sp)
+                Text(if (st.progress > 0) "Загружено заказов: ${st.progress}" else "Загружаю продажи…", color = c.textMuted, fontSize = 13.sp)
             }
-            all == null -> ErrorBox(state.error?.message) { state.retry() }
+            all == null -> ErrorBox(st.error) { store.refresh() }
             else -> {
                 val (from, to) = when (period) {
                     Period.TODAY -> Stats.startOfDay(0) to null
@@ -153,8 +152,8 @@ fun SalesScreen(repo: Repository, onOrder: (id: String) -> Unit) {
                 val shown = remember(found, status) { if (status == null) found else found.filter { it.status.name == status } }
 
                 PullToRefreshBox(
-                    isRefreshing = state.loading,
-                    onRefresh = { force = true; progress = 0; state.refresh() },
+                    isRefreshing = false,
+                    onRefresh = { store.refresh() },
                     modifier = Modifier.fillMaxSize(),
                 ) {
                     LazyColumn(Modifier.fillMaxSize()) {
@@ -195,7 +194,7 @@ fun SalesScreen(repo: Repository, onOrder: (id: String) -> Unit) {
                                 status = listOf(null, "PAID", "CLOSED", "REFUND")[i]
                             }
                             Text(
-                                "Показано ${shown.size} из ${all.size}", color = c.textMuted, fontSize = 12.sp,
+                                "Показано ${shown.size} из ${all.size}" + if (st.loading) " · обновляю… ${st.progress}" else "", color = c.textMuted, fontSize = 12.sp,
                                 modifier = Modifier.padding(start = 16.dp, top = 10.dp, bottom = 4.dp),
                             )
                         }

@@ -26,6 +26,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -75,7 +76,7 @@ private fun untilText(at: Long, now: Long = System.currentTimeMillis()): String 
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyProfileScreen(repo: Repository, snackbar: SnackbarHostState, onLot: (offerId: String) -> Unit) {
+fun MyProfileScreen(repo: Repository, store: lol.mrrabbitson.fpmini.data.SalesStore, snackbar: SnackbarHostState, onLot: (offerId: String) -> Unit) {
     val c = Ym.colors
     val scope = rememberCoroutineScope()
     var raising by remember { mutableStateOf<Int?>(null) } // id игры или -1 для «все»
@@ -88,7 +89,7 @@ fun MyProfileScreen(repo: Repository, snackbar: SnackbarHostState, onLot: (offer
         }
     }
     // продажи — отдельно, их загрузка дольше
-    val orders = rememberLoad("me_orders") { repo.allOrders() }
+    val sales by store.state.collectAsState()
 
     fun raise(gameId: Int?, groups: List<MyLotGroup>) {
         raising = gameId ?: -1
@@ -113,7 +114,7 @@ fun MyProfileScreen(repo: Repository, snackbar: SnackbarHostState, onLot: (offer
         LoadBox(state) { d ->
             PullToRefreshBox(
                 isRefreshing = state.loading,
-                onRefresh = { state.refresh(); orders.refresh() },
+                onRefresh = { state.refresh(); store.refresh() },
                 modifier = Modifier.fillMaxSize(),
             ) {
                 LazyColumn(Modifier.fillMaxSize()) {
@@ -142,7 +143,7 @@ fun MyProfileScreen(repo: Repository, snackbar: SnackbarHostState, onLot: (offer
                     item {
                         SectionLabel("Баланс", Modifier.padding(start = 16.dp, top = 16.dp, bottom = 6.dp))
                         Card(Modifier.padding(horizontal = 12.dp)) {
-                            val list = orders.data
+                            val list = sales.orders
                             val funds = remember(d.me.balance, list) { Stats.funds(d.me.balance, list.orEmpty()) }
                             Column(Modifier.padding(14.dp)) {
                                 Text(d.me.balance ?: "—", color = c.text, fontWeight = FontWeight.Bold, fontSize = 24.sp)
@@ -152,14 +153,14 @@ fun MyProfileScreen(repo: Repository, snackbar: SnackbarHostState, onLot: (offer
                                     Row(verticalAlignment = Alignment.CenterVertically) {
                                         CircularProgressIndicator(Modifier.size(14.dp), color = c.accent, strokeWidth = 2.dp)
                                         Spacer(Modifier.width(8.dp))
-                                        Text(if (orders.error != null) "Не удалось загрузить продажи" else "Считаю замороженные средства…", color = c.textMuted, fontSize = 13.sp)
+                                        Text(if (sales.error != null) "Не удалось загрузить продажи" else "Считаю замороженные средства…", color = c.textMuted, fontSize = 13.sp)
                                     }
                                 } else Row {
                                     StatCell("Доступно", funds.available?.let { Stats.money(it) } ?: "—", null, Modifier.weight(1f), c.online)
                                     StatCell("Заморожено", Stats.money(funds.frozen), "${funds.unlocks.size} заказ(ов)", Modifier.weight(1f), c.accent)
                                 }
                             }
-                            val unlocks = orders.data?.let { Stats.funds(d.me.balance, it).unlocks }.orEmpty()
+                            val unlocks = sales.orders?.let { Stats.funds(d.me.balance, it).unlocks }.orEmpty()
                             if (unlocks.isNotEmpty()) {
                                 HorizontalDivider(color = c.divider)
                                 Column(Modifier.padding(horizontal = 14.dp, vertical = 8.dp)) {
@@ -186,7 +187,7 @@ fun MyProfileScreen(repo: Repository, snackbar: SnackbarHostState, onLot: (offer
                     }
 
                     // ---------- заработок ----------
-                    orders.data?.let { list ->
+                    sales.orders?.let { list ->
                         item { Earnings(list) }
                     }
 

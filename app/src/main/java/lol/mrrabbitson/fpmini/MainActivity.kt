@@ -169,6 +169,9 @@ private fun MainUi(app: App, intent: Intent?, consumeIntent: () -> Unit) {
     val route = entry?.destination?.route
     val c = Ym.colors
 
+    // вся статистика продаж грузится в фоне сразу при запуске
+    LaunchedEffect(Unit) { app.sales.start() }
+
     // переход из уведомления
     LaunchedEffect(intent) {
         val tab = intent?.getStringExtra(Notifier.EXTRA_TAB) ?: return@LaunchedEffect
@@ -213,9 +216,9 @@ private fun MainUi(app: App, intent: Intent?, consumeIntent: () -> Unit) {
     ) { pad ->
         NavHost(nav, startDestination = Tab.CHATS.route, modifier = Modifier.padding(pad)) {
             composable(Tab.CHATS.route) { ChatsScreen(app.repo, openChat) }
-            composable(Tab.PROFILE.route) { MyProfileScreen(app.repo, snackbar, onLot = { id -> nav.navigate("lot_edit/$id") }) }
+            composable(Tab.PROFILE.route) { MyProfileScreen(app.repo, app.sales, snackbar, onLot = { id -> nav.navigate("lot_edit/$id") }) }
             composable(Tab.SALES.route) {
-                SalesScreen(app.repo) { id -> nav.navigate("order/$id") }
+                SalesScreen(app.sales) { id -> nav.navigate("order/$id") }
             }
             composable(Tab.SUPPORT.route) {
                 SupportScreen(app.repo, onOpen = { id, title -> nav.navigate("ticket/$id?title=${Uri.encode(title)}") }, onNew = { nav.navigate("ticket_new") })

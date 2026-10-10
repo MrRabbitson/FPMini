@@ -85,6 +85,7 @@ fun SettingsScreen(app: App) {
                         modifier = Modifier.clickable {
                             prefs.updateAuto { it.copy(background = false) }
                             AutomationService.stop(ctx)
+                            app.sales.stopAndClear()
                             prefs.setGoldenKey(null)
                             app.repo.clear()
                             // чтобы встроенный браузер не вошёл обратно в старый аккаунт
