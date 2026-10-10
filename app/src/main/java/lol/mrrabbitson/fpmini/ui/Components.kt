@@ -446,9 +446,9 @@ fun ReviewItem(r: Review) {
             Column {
                 r.date?.let { Text(it, color = c.text, fontSize = 17.sp) }
                 r.detail?.let { Text(it, color = c.textMuted, fontWeight = FontWeight.Bold, fontSize = 16.sp) }
-                if (r.stars != null) {
+                r.stars?.let { n ->
                     Spacer(Modifier.height(4.dp))
-                    Stars(r.stars, size = 22.dp)
+                    Stars(n, size = 22.dp)
                 }
             }
         }
