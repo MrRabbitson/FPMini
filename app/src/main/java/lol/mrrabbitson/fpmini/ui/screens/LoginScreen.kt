@@ -5,6 +5,7 @@ import android.webkit.CookieManager
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -44,8 +45,8 @@ fun LoginScreen(onClose: () -> Unit, onGoldenKey: (String) -> Unit) {
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onClose) { Icon(Icons.Filled.Close, "Закрыть", tint = c.text) }
             Column {
-                Text("Вход на FunPay", color = c.text, fontWeight = FontWeight.Black, fontSize = 18.sp)
-                Text("funpay.com · FPMini — неофициальный клиент", color = c.textMuted, fontSize = 13.sp)
+                Text("Вход на FunPay", color = c.text, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                Text("funpay.com", color = c.textMuted, fontSize = 12.sp)
             }
         }
         AndroidView(
@@ -72,5 +73,47 @@ fun LoginScreen(onClose: () -> Unit, onGoldenKey: (String) -> Unit) {
                 }
             },
         )
+    }
+}
+
+/** Экран до входа: войти через сайт или вставить golden_key. */
+@Composable
+fun LoginGate(onWebLogin: () -> Unit, onKey: (String) -> Unit, busy: Boolean, error: String?) {
+    val c = Ym.colors
+    var showKey by remember { mutableStateOf(false) }
+    var key by remember { mutableStateOf("") }
+    androidx.compose.foundation.layout.Box(
+        Modifier.fillMaxSize().background(c.bg).statusBarsPadding().padding(24.dp),
+        contentAlignment = Alignment.Center,
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("FPMini", color = c.text, fontWeight = FontWeight.Black, fontSize = 30.sp)
+            Text("неофициальный клиент FunPay для продавцов", color = c.textMuted, fontSize = 13.sp)
+            androidx.compose.foundation.layout.Spacer(Modifier.padding(16.dp))
+            lol.mrrabbitson.fpmini.ui.PrimaryButton(if (busy) "Проверяю вход…" else "Войти через funpay.com", Modifier.fillMaxWidth(), enabled = !busy, onClick = onWebLogin)
+            androidx.compose.foundation.layout.Spacer(Modifier.padding(4.dp))
+            if (!showKey) {
+                Text(
+                    "Ввести golden_key вручную", color = c.accent, fontSize = 14.sp,
+                    modifier = Modifier.clickable { showKey = true }.padding(8.dp),
+                )
+            } else {
+                androidx.compose.material3.OutlinedTextField(
+                    key, { key = it.trim() }, singleLine = true,
+                    label = { Text("golden_key") }, modifier = Modifier.fillMaxWidth(),
+                )
+                androidx.compose.foundation.layout.Spacer(Modifier.padding(4.dp))
+                lol.mrrabbitson.fpmini.ui.SecondaryButton("Войти по ключу", Modifier.fillMaxWidth(), enabled = key.length >= 16 && !busy) { onKey(key) }
+            }
+            if (error != null) {
+                androidx.compose.foundation.layout.Spacer(Modifier.padding(4.dp))
+                Text(error, color = androidx.compose.ui.graphics.Color(0xFFE5534B), fontSize = 13.sp)
+            }
+            androidx.compose.foundation.layout.Spacer(Modifier.padding(12.dp))
+            Text(
+                "Пароль вводится на странице FunPay — приложение его не видит. После входа сохраняется только ключ сессии, и только на этом телефоне.",
+                color = c.textMuted, fontSize = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+            )
+        }
     }
 }
