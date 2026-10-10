@@ -1,10 +1,10 @@
-package app.yarmarka.data
+package lol.mrrabbitson.fpmini.data
 
-import app.yarmarka.core.CategoryPage
-import app.yarmarka.core.HomePage
-import app.yarmarka.core.OfferPage
-import app.yarmarka.core.Parser
-import app.yarmarka.core.ProfilePage
+import lol.mrrabbitson.fpmini.core.CategoryPage
+import lol.mrrabbitson.fpmini.core.HomePage
+import lol.mrrabbitson.fpmini.core.OfferPage
+import lol.mrrabbitson.fpmini.core.Parser
+import lol.mrrabbitson.fpmini.core.ProfilePage
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.json.JSONObject

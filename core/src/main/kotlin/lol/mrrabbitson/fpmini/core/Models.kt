@@ -1,4 +1,4 @@
-package app.yarmarka.core
+package lol.mrrabbitson.fpmini.core
 
 /** Ссылка на раздел игры: /lots/123/ или /chips/45/ */
 data class CategoryRef(

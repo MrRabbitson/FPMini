@@ -1,4 +1,4 @@
-package app.yarmarka.ui.screens
+package lol.mrrabbitson.fpmini.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -47,15 +47,15 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.yarmarka.data.Prefs
-import app.yarmarka.data.Repository
-import app.yarmarka.data.ThemeMode
-import app.yarmarka.data.ThemeSettings
-import app.yarmarka.ui.CapsLabel
-import app.yarmarka.ui.Stars
-import app.yarmarka.ui.YmButton
+import lol.mrrabbitson.fpmini.data.Prefs
+import lol.mrrabbitson.fpmini.data.Repository
+import lol.mrrabbitson.fpmini.data.ThemeMode
+import lol.mrrabbitson.fpmini.data.ThemeSettings
+import lol.mrrabbitson.fpmini.ui.CapsLabel
+import lol.mrrabbitson.fpmini.ui.Stars
+import lol.mrrabbitson.fpmini.ui.YmButton
 import androidx.compose.foundation.layout.statusBarsPadding
-import app.yarmarka.ui.theme.Ym
+import lol.mrrabbitson.fpmini.ui.theme.Ym
 import kotlinx.coroutines.launch
 
 @Composable
@@ -162,7 +162,7 @@ fun SettingsScreen(
             )
             Spacer(Modifier.height(16.dp))
             Text(
-                "Ярмарка — неофициальный клиент. Не связан с FunPay. Покупка и оплата проходят на сайте funpay.com.",
+                "FPMini — неофициальный клиент. Не связан с FunPay. Покупка и оплата проходят на сайте funpay.com.",
                 color = c.textMuted, fontSize = 13.sp,
             )
             Spacer(Modifier.height(40.dp))

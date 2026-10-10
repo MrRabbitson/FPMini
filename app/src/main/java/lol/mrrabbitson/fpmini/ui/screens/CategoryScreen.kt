@@ -1,4 +1,4 @@
-package app.yarmarka.ui.screens
+package lol.mrrabbitson.fpmini.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -31,14 +31,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.yarmarka.core.OfferRow
-import app.yarmarka.data.Repository
-import app.yarmarka.ui.CapsLabel
-import app.yarmarka.ui.CornerCover
-import app.yarmarka.ui.LoadBox
-import app.yarmarka.ui.OfferTable
-import app.yarmarka.ui.rememberLoad
-import app.yarmarka.ui.theme.Ym
+import lol.mrrabbitson.fpmini.core.OfferRow
+import lol.mrrabbitson.fpmini.data.Repository
+import lol.mrrabbitson.fpmini.ui.CapsLabel
+import lol.mrrabbitson.fpmini.ui.CornerCover
+import lol.mrrabbitson.fpmini.ui.LoadBox
+import lol.mrrabbitson.fpmini.ui.OfferTable
+import lol.mrrabbitson.fpmini.ui.rememberLoad
+import lol.mrrabbitson.fpmini.ui.theme.Ym
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

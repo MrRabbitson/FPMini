@@ -1,4 +1,4 @@
-# Ярмарка
+# FPMini
 
 Неофициальный клиент FunPay для Android. Бесплатный, без рекламы, с открытым кодом (MIT).
 Не связан с FunPay; оплата и покупка проходят на сайте funpay.com.
@@ -17,7 +17,7 @@
 ## Как получить APK
 
 1. Создайте репозиторий на GitHub и загрузите туда эту папку.
-2. GitHub Actions соберёт APK сам (вкладка **Actions** → последняя сборка → артефакт `yarmarka-apk`).
+2. GitHub Actions соберёт APK сам (вкладка **Actions** → последняя сборка → артефакт `fpmini-apk`).
 3. Для релиза со ссылкой на скачивание: создайте тег `v0.1.0` — APK появится в **Releases**.
 
 ### Свой ключ подписи (рекомендуется)
@@ -26,11 +26,11 @@
 Один раз создайте ключ и добавьте секреты в **Settings → Secrets and variables → Actions**:
 
 ```
-keytool -genkeypair -v -keystore release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias yarmarka
+keytool -genkeypair -v -keystore release.jks -keyalg RSA -keysize 2048 -validity 10000 -alias fpmini
 base64 -w0 release.jks   # → секрет KEYSTORE_BASE64
 ```
 
-Секреты: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` (`yarmarka`), `KEY_PASSWORD`.
+Секреты: `KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS` (`fpmini`), `KEY_PASSWORD`.
 Сам файл `release.jks` в репозиторий не кладите.
 
 ## Структура

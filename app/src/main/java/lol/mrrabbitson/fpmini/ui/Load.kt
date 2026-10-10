@@ -1,4 +1,4 @@
-package app.yarmarka.ui
+package lol.mrrabbitson.fpmini.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect

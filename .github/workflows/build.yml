@@ -41,16 +41,16 @@ jobs:
         run: |
           chmod +x gradlew
           ./gradlew --no-daemon assembleRelease
-          cp app/build/outputs/apk/release/app-release.apk yarmarka.apk
+          cp app/build/outputs/apk/release/app-release.apk fpmini.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: yarmarka-apk
-          path: yarmarka.apk
+          name: fpmini-apk
+          path: fpmini.apk
 
       # Тег vX.Y.Z → релиз со скачиваемым APK
       - name: Релиз
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: yarmarka.apk
+          files: fpmini.apk

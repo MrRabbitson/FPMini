@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "app.yarmarka"
+    namespace = "lol.mrrabbitson.fpmini"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "app.yarmarka"
+        applicationId = "lol.mrrabbitson.fpmini"
         minSdk = 24
         targetSdk = 35
         versionCode = (System.getenv("VERSION_CODE") ?: "1").toInt()

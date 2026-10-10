@@ -1,4 +1,4 @@
-package app.yarmarka.ui.theme
+package lol.mrrabbitson.fpmini.ui.theme
 
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,8 +15,8 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
-import app.yarmarka.data.ThemeMode
-import app.yarmarka.data.ThemeSettings
+import lol.mrrabbitson.fpmini.data.ThemeMode
+import lol.mrrabbitson.fpmini.data.ThemeSettings
 
 /** Цвета приложения. Названия по смыслу, а не по Material, — так проще настраивать. */
 @Immutable

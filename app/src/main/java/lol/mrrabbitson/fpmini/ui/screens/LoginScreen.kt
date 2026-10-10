@@ -1,4 +1,4 @@
-package app.yarmarka.ui.screens
+package lol.mrrabbitson.fpmini.ui.screens
 
 import android.annotation.SuppressLint
 import android.webkit.CookieManager
@@ -27,7 +27,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
-import app.yarmarka.ui.theme.Ym
+import lol.mrrabbitson.fpmini.ui.theme.Ym
 
 /**
  * Вход на настоящем сайте funpay.com во встроенном браузере.
@@ -45,7 +45,7 @@ fun LoginScreen(onClose: () -> Unit, onGoldenKey: (String) -> Unit) {
             IconButton(onClick = onClose) { Icon(Icons.Filled.Close, "Закрыть", tint = c.text) }
             Column {
                 Text("Вход на FunPay", color = c.text, fontWeight = FontWeight.Black, fontSize = 18.sp)
-                Text("funpay.com", color = c.textMuted, fontSize = 13.sp)
+                Text("funpay.com · FPMini — неофициальный клиент", color = c.textMuted, fontSize = 13.sp)
             }
         }
         AndroidView(

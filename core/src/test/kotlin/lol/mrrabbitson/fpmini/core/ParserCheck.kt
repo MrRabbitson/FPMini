@@ -1,4 +1,4 @@
-package app.yarmarka.core
+package lol.mrrabbitson.fpmini.core
 
 // Простая проверка разбора на фикстурах (запуск: main). В проекте не участвует в сборке APK.
 

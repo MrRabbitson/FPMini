@@ -1,4 +1,4 @@
-package app.yarmarka.core
+package lol.mrrabbitson.fpmini.core
 
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Document

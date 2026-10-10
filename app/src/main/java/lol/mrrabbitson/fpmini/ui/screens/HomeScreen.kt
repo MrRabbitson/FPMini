@@ -1,4 +1,4 @@
-package app.yarmarka.ui.screens
+package lol.mrrabbitson.fpmini.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -46,14 +46,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.yarmarka.core.CategoryRef
-import app.yarmarka.core.Game
-import app.yarmarka.data.Prefs
-import app.yarmarka.data.Repository
-import app.yarmarka.ui.CapsLabel
-import app.yarmarka.ui.LoadBox
-import app.yarmarka.ui.rememberLoad
-import app.yarmarka.ui.theme.Ym
+import lol.mrrabbitson.fpmini.core.CategoryRef
+import lol.mrrabbitson.fpmini.core.Game
+import lol.mrrabbitson.fpmini.data.Prefs
+import lol.mrrabbitson.fpmini.data.Repository
+import lol.mrrabbitson.fpmini.ui.CapsLabel
+import lol.mrrabbitson.fpmini.ui.LoadBox
+import lol.mrrabbitson.fpmini.ui.rememberLoad
+import lol.mrrabbitson.fpmini.ui.theme.Ym
 import kotlinx.coroutines.launch
 
 private sealed interface HomeItem {

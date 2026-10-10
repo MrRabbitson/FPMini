@@ -13,5 +13,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Yarmarka"
+rootProject.name = "FPMini"
 include(":app", ":core")

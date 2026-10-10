@@ -1,4 +1,4 @@
-package app.yarmarka
+package lol.mrrabbitson.fpmini
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -39,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -46,17 +47,17 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import app.yarmarka.core.OfferRow
-import app.yarmarka.ui.Logo
-import app.yarmarka.ui.YmTopBar
-import app.yarmarka.ui.screens.CategoryScreen
-import app.yarmarka.ui.screens.HomeScreen
-import app.yarmarka.ui.screens.LoginScreen
-import app.yarmarka.ui.screens.OfferScreen
-import app.yarmarka.ui.screens.ProfileScreen
-import app.yarmarka.ui.screens.SettingsScreen
-import app.yarmarka.ui.theme.Ym
-import app.yarmarka.ui.theme.YmTheme
+import lol.mrrabbitson.fpmini.core.OfferRow
+import lol.mrrabbitson.fpmini.ui.Logo
+import lol.mrrabbitson.fpmini.ui.YmTopBar
+import lol.mrrabbitson.fpmini.ui.screens.CategoryScreen
+import lol.mrrabbitson.fpmini.ui.screens.HomeScreen
+import lol.mrrabbitson.fpmini.ui.screens.LoginScreen
+import lol.mrrabbitson.fpmini.ui.screens.OfferScreen
+import lol.mrrabbitson.fpmini.ui.screens.ProfileScreen
+import lol.mrrabbitson.fpmini.ui.screens.SettingsScreen
+import lol.mrrabbitson.fpmini.ui.theme.Ym
+import lol.mrrabbitson.fpmini.ui.theme.YmTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -117,7 +118,10 @@ private fun AppRoot(app: App) {
         gesturesEnabled = drawer.isOpen,
         drawerContent = {
             ModalDrawerSheet(drawerContainerColor = c.bg) {
-                Column(Modifier.statusBarsPadding().padding(20.dp)) { Logo() }
+                Column(Modifier.statusBarsPadding().padding(20.dp)) {
+                    Logo()
+                    Text("неофициальный клиент FunPay", color = c.textMuted, fontSize = 13.sp)
+                }
                 val itemColors = NavigationDrawerItemDefaults.colors(
                     selectedContainerColor = c.field, unselectedContainerColor = c.bg,
                     selectedTextColor = c.text, unselectedTextColor = c.text,

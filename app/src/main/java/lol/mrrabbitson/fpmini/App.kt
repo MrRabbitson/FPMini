@@ -1,9 +1,9 @@
-package app.yarmarka
+package lol.mrrabbitson.fpmini
 
 import android.app.Application
-import app.yarmarka.data.FpClient
-import app.yarmarka.data.Prefs
-import app.yarmarka.data.Repository
+import lol.mrrabbitson.fpmini.data.FpClient
+import lol.mrrabbitson.fpmini.data.Prefs
+import lol.mrrabbitson.fpmini.data.Repository
 
 class App : Application() {
     lateinit var prefs: Prefs

@@ -3,4 +3,4 @@
 -dontwarn org.jspecify.annotations.**
 -dontwarn com.google.re2j.**
 # Модели разбора
--keep class app.yarmarka.core.** { *; }
+-keep class lol.mrrabbitson.fpmini.core.** { *; }

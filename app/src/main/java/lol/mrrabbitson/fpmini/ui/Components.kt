@@ -1,4 +1,4 @@
-package app.yarmarka.ui
+package lol.mrrabbitson.fpmini.ui
 
 import android.content.Context
 import android.content.Intent
@@ -63,12 +63,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import app.yarmarka.core.OfferRow
-import app.yarmarka.core.Rating
-import app.yarmarka.core.Review
-import app.yarmarka.core.UserShort
-import app.yarmarka.data.FpException
-import app.yarmarka.ui.theme.Ym
+import lol.mrrabbitson.fpmini.core.OfferRow
+import lol.mrrabbitson.fpmini.core.Rating
+import lol.mrrabbitson.fpmini.core.Review
+import lol.mrrabbitson.fpmini.core.UserShort
+import lol.mrrabbitson.fpmini.data.FpException
+import lol.mrrabbitson.fpmini.ui.theme.Ym
 import coil.compose.AsyncImage
 
 // ---------- ссылки ----------
@@ -174,7 +174,7 @@ fun Logo(modifier: Modifier = Modifier) {
     Row(modifier, verticalAlignment = Alignment.CenterVertically) {
         Box(Modifier.size(10.dp).clip(CircleShape).background(c.accent))
         Spacer(Modifier.width(6.dp))
-        Text("ЯРМАРКА", color = c.text, fontWeight = FontWeight.Black, fontSize = 18.sp, letterSpacing = 0.5.sp)
+        Text("FPMini", color = c.text, fontWeight = FontWeight.Black, fontSize = 18.sp, letterSpacing = 0.5.sp)
     }
 }
 

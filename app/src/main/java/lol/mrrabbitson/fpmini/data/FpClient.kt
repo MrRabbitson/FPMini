@@ -1,4 +1,4 @@
-package app.yarmarka.data
+package lol.mrrabbitson.fpmini.data
 
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext

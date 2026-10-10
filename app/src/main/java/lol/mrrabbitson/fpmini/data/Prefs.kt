@@ -1,4 +1,4 @@
-package app.yarmarka.data
+package lol.mrrabbitson.fpmini.data
 
 import android.content.Context
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,8 +38,8 @@ data class Account(
 }
 
 class Prefs(context: Context) {
-    private val sp = context.getSharedPreferences("yarmarka", Context.MODE_PRIVATE)
-    private val cookiesSp = context.getSharedPreferences("yarmarka_cookies", Context.MODE_PRIVATE)
+    private val sp = context.getSharedPreferences("fpmini", Context.MODE_PRIVATE)
+    private val cookiesSp = context.getSharedPreferences("fpmini_cookies", Context.MODE_PRIVATE)
 
     // ---------- тема ----------
 
