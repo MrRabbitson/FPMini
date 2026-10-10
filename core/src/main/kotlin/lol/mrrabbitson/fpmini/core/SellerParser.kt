@@ -112,9 +112,16 @@ object SellerParser {
             status = status,
             statusText = statusText.ifBlank {
                 when (status) { OrderStatus.PAID -> "Оплачен"; OrderStatus.CLOSED -> "Закрыт"; OrderStatus.REFUND -> "Возврат" }
-            },
+            }.replaceFirstChar { it.uppercase() },
+            timeMs = FpDates.parse(row.selectFirst(".tc-date-time")?.text().orEmpty()),
         )
     }
+
+    /** Страница продаж + токен для следующей страницы (форма «Показать ещё»). */
+    fun ordersPage(html: String): OrdersPage = OrdersPage(
+        orders(html),
+        Parser.doc(html).selectFirst("input[name=continue]")?.attr("value")?.ifBlank { null },
+    )
 
     // ---------- мои лоты ----------
 
@@ -186,16 +193,33 @@ object SellerParser {
 
     fun order(html: String, id: String): OrderPage {
         val d = Parser.doc(html)
-        val params = d.select(".param-item").mapNotNull { p ->
-            val label = p.selectFirst("h5")?.text()?.trim() ?: return@mapNotNull null
-            val clone = p.clone(); clone.select("h5").remove()
+        var amount: String? = null
+        var goods: String? = null
+        val params = mutableListOf<Param>()
+        for (p in d.select(".param-item")) {
+            val label = p.selectFirst("h5")?.text()?.trim() ?: continue
+            // «Действия» — это кнопки (возврат и т.п.), не данные заказа
+            if (label.contains("Действия", true) || label.contains("Actions", true)) continue
+            if (label.contains("Сумма", true) || label.contains("Total", true)) {
+                val big = p.selectFirst("span.h1")?.text()?.trim()
+                val cur = p.select("strong").lastOrNull()?.text()?.trim()
+                amount = listOfNotNull(big, cur).joinToString(" ").ifBlank { null }
+                    ?: p.clone().also { it.select("h5").remove() }.text().trim().ifBlank { null }
+                continue
+            }
+            if (label.contains("Оплаченн", true) || label.contains("Paid product", true)) {
+                goods = if (p.selectFirst("span.secret-placeholder") != null) "Скрыт (выдан автоматически)"
+                else Parser.textWithBreaks(p.clone().also { it.select("h5").remove() }).ifBlank { null }
+                continue
+            }
+            val clone = p.clone(); clone.select("h5").remove(); clone.select("button, form, .btn").remove()
             val v = Parser.textWithBreaks(clone)
-            if (v.isBlank()) null else Param(label, v)
-        }.distinctBy { it.label }
-        val status = d.selectFirst(".page-header .text-success, .page-header .text-warning, .page-header .text-primary, h1 + .text-muted, .order-status")
-            ?.text()?.trim()?.ifBlank { null }
-        // собеседник в чате заказа — это покупатель
-        val nameLink = d.selectFirst(".chat-header .media-user-name a")
+            if (v.isNotBlank() && params.none { it.label == label }) params += Param(label, v)
+        }
+        val header = d.selectFirst("h1.page-header, .page-header")
+        val status = header?.selectFirst(".text-success, .text-warning, .text-primary, .text-danger")?.text()?.trim()?.ifBlank { null }
+            ?: header?.select("span")?.lastOrNull()?.text()?.trim()?.ifBlank { null }
+        val nameLink = d.selectFirst(".chat-header .media-user-name a, .chat-float .media-user-name a")
         val media = nameLink?.parents()?.firstOrNull { it.hasClass("media") }
         val buyer = nameLink?.let {
             UserShort(Parser.userIdFromHref(it.attr("href")), it.text().trim(), Parser.imageUrl(media?.selectFirst(".avatar-photo")),
@@ -203,7 +227,8 @@ object SellerParser {
         }
         val chatNode = d.selectFirst(".chat[data-id]")?.attr("data-id")?.ifBlank { null }
             ?: d.selectFirst("[data-name^='users-']")?.attr("data-name")
-        return OrderPage(id, status, params.filterNot { it.label.contains("чат", true) }, buyer, chatNode,
+        return OrderPage(id, status?.replaceFirstChar { it.uppercase() }, amount, goods,
+            params.filterNot { it.label.contains("чат", true) }, buyer, chatNode,
             canRefund = d.selectFirst("button.btn-refund") != null)
     }
 

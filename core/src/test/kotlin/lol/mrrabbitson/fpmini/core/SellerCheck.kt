@@ -153,8 +153,9 @@ private val ORDER = """
 <h1 class="page-header">Заказ #ABC123 <span class="text-primary">Оплачен</span></h1>
 <div class="param-item"><h5>Игра</h5><div>Discord</div></div>
 <div class="param-item"><h5>Краткое описание</h5><div>Участники 100 шт.</div></div>
-<div class="param-item"><h5>Сумма</h5><div>3.50 ₽</div></div>
-<button class="btn btn-default btn-refund">Вернуть деньги</button>
+<div class="param-item"><h5>Сумма</h5><div><span class="h1">3.50</span> <strong>₽</strong></div></div>
+<div class="param-item"><h5>Оплаченный товар</h5><div><span class="secret-placeholder">Скрыто</span></div></div>
+<div class="param-item"><h5>Действия</h5><div><button class="btn btn-default btn-refund">Вернуть деньги</button></div></div>
 <div class="chat" data-id="123456" data-name="users-7-42">
  <div class="chat-header"><div class="media"><div class="media-body"><div class="media-user-name"><a href="https://funpay.com/users/42/">Buyer1</a></div><div class="media-user-status">Онлайн</div></div></div></div>
 </div>
@@ -180,7 +181,8 @@ private val TICKET_FORM = """
 
 fun mainExtra() {
     val o = SellerParser.order(ORDER, "ABC123")
-    ok(o.params.size == 3 && o.params[2].value == "3.50 ₽", "заказ: параметры")
+    ok(o.params.map { it.label } == listOf("Игра", "Краткое описание"), "заказ: параметры без «Действий»: ${o.params.map { it.label }}")
+    ok(o.amount == "3.50 ₽" && o.paidGoods == "Скрыт (выдан автоматически)", "заказ: сумма и товар")
     ok(o.buyer?.id == 42 && o.chatNode == "123456" && o.canRefund, "заказ: покупатель/чат/возврат")
     ok(o.status == "Оплачен", "заказ: статус ${o.status}")
     val cats = SellerParser.ticketCategories(NEW_TICKET)
@@ -190,5 +192,52 @@ fun mainExtra() {
     ok(f.fields[0].label == "Номер заказа" && f.fields[0].required, "форма: текстовое обязательное")
     ok(f.fields[1].kind == "radio" && f.fields[1].options.map { it.label } == listOf("Продавец", "Покупатель") && f.fields[1].label == "Ваша роль", "форма: радио")
     ok(f.fields[2].kind == "select" && f.fields[2].options.single().label == "Discord", "форма: список")
+    // даты
+    val now = java.util.Calendar.getInstance().apply { set(2026, 9, 10, 15, 0, 0) }
+    fun d(t: String) = FpDates.parse(t, now)?.let { java.text.SimpleDateFormat("yyyy-MM-dd HH:mm").format(java.util.Date(it)) }
+    ok(d("Сегодня, 14:05") == "2026-10-10 14:05", "дата: сегодня")
+    ok(d("Вчера, 9:00") == "2026-10-09 09:00", "дата: вчера")
+    ok(d("3 октября, 12:30") == "2026-10-03 12:30", "дата: без года")
+    ok(d("25 декабря, 10:00") == "2025-12-25 10:00", "дата: прошлый год")
+    ok(d("1 мая 2024, 08:15") == "2024-05-01 08:15", "дата: с годом")
+    // постраничная загрузка
+    val pg = SellerParser.ordersPage(ORDERS.replace("</div></body>", "</div><form><input type=\"hidden\" name=\"continue\" value=\"TOK9\"></form></body>"))
+    ok(pg.continueToken == "TOK9" && pg.orders.size == 3, "продажи: токен следующей страницы")
+    ok(pg.orders[0].timeMs != null && pg.orders[0].game == "Discord" && pg.orders[0].subcategory == "Услуги", "продажи: дата и раздел")
+    // json
+    val j = MiniJson.parse("[{\"id\":\"5\",\"conditions\":[{\"id\":\"3\",\"list\":[\"a\",\"b c\"]}]}]") as List<*>
+    ok(((j[0] as Map<*, *>)["conditions"] as List<*>).size == 1, "json: разбор")
+    // форма лота
+    val lf = LotFormParser.parse(LOT_FORM, "777")
+    ok(lf.csrf == "CS" && lf.fields.map { it.name }.containsAll(listOf("fields[summary][ru]", "fields[desc][ru]", "price", "amount", "active", "fields[3]", "fields[5]", "offer_id", "node_id")), "лот: поля ${lf.fields.map { it.name }}")
+    val price = lf.fields.first { it.name == "price" }
+    ok(price.kind == "number" && price.value == "10", "лот: цена")
+    ok(lf.fields.first { it.name == "fields[desc][ru]" }.value == "строка1\nстрока2", "лот: описание с переносами")
+    val sel = lf.fields.first { it.name == "fields[3]" }
+    ok(sel.kind == "select" && sel.value == "b" && sel.options.size == 2, "лот: список")
+    val cond = lf.fields.first { it.name == "fields[5]" }
+    ok(cond.conditions.single().first == "fields[3]", "лот: условие поля")
+    val vals = lf.fields.associate { it.name to it.value }
+    ok(!lf.isActive(cond, vals + ("fields[3]" to "b")) && lf.isActive(cond, vals + ("fields[3]" to "a")), "лот: условное поле скрывается")
+    val body = lf.buildSave(vals + ("active" to ""), null)
+    ok(body.first() == ("csrf_token" to "CS") && body.count { it.first == "active" } == 1 && body.none { it.first == "fields[5]" }, "лот: тело сохранения $body")
     println("EXTRA OK")
 }
+
+private val LOT_FORM = """
+<html><body data-app-data='{"csrf-token":"X","userId":7}'><h1>Редактирование предложения</h1>
+<form class="form-offer-editor">
+ <input type="hidden" name="csrf_token" value="CS"><input type="hidden" name="offer_id" value="777"><input type="hidden" name="node_id" value="102">
+ <div class="lot-fields" data-fields='[{"id":"5","conditions":[{"id":"3","list":["a"]}]}]'>
+  <div class="lot-field form-group" data-id="3"><label class="control-label">Тип</label><select name="fields[3]"><option value="a">А</option><option value="b" selected>Б</option></select></div>
+  <div class="lot-field form-group" data-id="5"><label class="control-label">Только для А</label><input type="text" name="fields[5]" value="x"></div>
+ </div>
+ <div class="form-group" data-locale="ru"><label class="control-label">Краткое описание</label><input type="text" name="fields[summary][ru]" value="Участники"></div>
+ <div class="form-group" data-locale="ru"><label class="control-label">Подробное описание</label><textarea name="fields[desc][ru]">строка1
+строка2</textarea></div>
+ <div class="form-group"><label class="control-label">Цена</label><input type="text" name="price" inputmode="decimal" value="10"></div>
+ <div class="form-group"><label class="control-label">Наличие</label><input type="text" name="amount" value="100"></div>
+ <div class="form-group"><input type="hidden" name="active" value=""><label><input type="checkbox" name="active" checked> Активное</label></div>
+ <button type="submit">Сохранить</button>
+</form></body></html>
+"""

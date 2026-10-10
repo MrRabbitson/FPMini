@@ -91,10 +91,12 @@ fun OrderScreen(repo: Repository, id: String, onBack: () -> Unit, onChat: (node:
                 item {
                     SectionLabel("Детали заказа", Modifier.padding(start = 4.dp, bottom = 6.dp))
                     Card {
-                        if (o.params.isEmpty()) EmptyState("Нет данных о заказе")
-                        o.params.forEachIndexed { i, p ->
+                        val rows = listOfNotNull(o.amount?.let { "Сумма" to it }, o.paidGoods?.let { "Оплаченный товар" to it }) +
+                            o.params.map { it.label to it.value }
+                        if (rows.isEmpty()) EmptyState("Нет данных о заказе")
+                        rows.forEachIndexed { i, (label, value) ->
                             if (i > 0) HorizontalDivider(color = c.divider)
-                            ParamRow(p.label, p.value)
+                            ParamRow(label, value)
                         }
                     }
                 }

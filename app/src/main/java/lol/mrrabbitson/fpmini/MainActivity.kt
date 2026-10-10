@@ -27,6 +27,7 @@ import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.ShoppingCart
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -67,6 +68,7 @@ import androidx.compose.ui.platform.LocalContext
 import lol.mrrabbitson.fpmini.ui.screens.LoginGate
 import lol.mrrabbitson.fpmini.ui.screens.LoginScreen
 import lol.mrrabbitson.fpmini.ui.screens.LotScreen
+import lol.mrrabbitson.fpmini.ui.screens.LotEditScreen
 import lol.mrrabbitson.fpmini.ui.screens.NewTicketScreen
 import lol.mrrabbitson.fpmini.ui.screens.OrderScreen
 import lol.mrrabbitson.fpmini.ui.screens.MyProfileScreen
@@ -112,6 +114,7 @@ private enum class Tab(val route: String, val label: String, val icon: ImageVect
     SALES("sales", "Продажи", Icons.Filled.ShoppingCart),
     SUPPORT("support", "Поддержка", Icons.Filled.Info),
     AUTO("auto", "Авто", Icons.Filled.Build),
+    SETTINGS("settings", "Настройки", Icons.Filled.Settings),
 }
 
 private fun NavHostController.openTab(route: String) = navigate(route) {
@@ -201,7 +204,7 @@ private fun MainUi(app: App, intent: Intent?, consumeIntent: () -> Unit) {
     ) { pad ->
         NavHost(nav, startDestination = Tab.CHATS.route, modifier = Modifier.padding(pad)) {
             composable(Tab.CHATS.route) { ChatsScreen(app.repo, openChat) }
-            composable(Tab.PROFILE.route) { MyProfileScreen(app.repo, snackbar, onSettings = { nav.navigate("settings") }, onLot = { t, id -> nav.navigate("lot/$t/$id") }) }
+            composable(Tab.PROFILE.route) { MyProfileScreen(app.repo, snackbar, onLot = { id -> nav.navigate("lot_edit/$id") }) }
             composable(Tab.SALES.route) {
                 SalesScreen(app.repo) { id -> nav.navigate("order/$id") }
             }
@@ -249,7 +252,14 @@ private fun MainUi(app: App, intent: Intent?, consumeIntent: () -> Unit) {
                     onBack = { nav.popBackStack() },
                 )
             }
-            composable("settings") { SettingsScreen(app) { nav.popBackStack() } }
+            composable(Tab.SETTINGS.route) { SettingsScreen(app) }
+            composable("lot_edit/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { e ->
+                LotEditScreen(
+                    app.repo, e.arguments?.getString("id").orEmpty(), snackbar,
+                    onBack = { nav.popBackStack() },
+                    onSaved = { nav.popBackStack() },
+                )
+            }
             composable("order/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { e ->
                 OrderScreen(app.repo, e.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() }, onChat = openChat)
             }

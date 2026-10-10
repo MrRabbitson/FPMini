@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
@@ -35,11 +37,42 @@ import lol.mrrabbitson.fpmini.ui.theme.Ym
  * Логин и пароль вводятся на странице FunPay, приложение их не видит —
  * после входа берём только куку golden_key.
  */
+/**
+ * Вход на настоящем сайте funpay.com во встроенном браузере.
+ * Пароль и код 2ФА вводятся на странице FunPay — приложение их не видит.
+ * Раз в 3 секунды проверяем, появилась ли кука golden_key (вход завершён, в том числе после 2ФА).
+ */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 fun LoginScreen(onClose: () -> Unit, onGoldenKey: (String) -> Unit) {
     val c = Ym.colors
     var done by remember { mutableStateOf(false) }
+    var hint by remember { mutableStateOf("Войдите в аккаунт FunPay. Если включена двухфакторная защита — введите код, приложение подождёт.") }
+
+    fun check(): Boolean {
+        if (done) return true
+        val cm = CookieManager.getInstance()
+        cm.flush()
+        val cookies = cm.getCookie("https://funpay.com").orEmpty()
+        val key = Regex("(?:^|;\\s*)golden_key=([^;]+)").find(cookies)?.groupValues?.get(1)
+        if (!key.isNullOrBlank() && key.length >= 16) {
+            done = true
+            onGoldenKey(key)
+            return true
+        }
+        return false
+    }
+
+    // проверка раз в 3 секунды, пока экран открыт
+    androidx.compose.runtime.LaunchedEffect(Unit) {
+        var ticks = 0
+        while (!done) {
+            kotlinx.coroutines.delay(3_000)
+            if (check()) break
+            ticks++
+            if (ticks == 20) hint = "Жду завершения входа… Если FunPay просит код из письма или приложения — введите его на странице."
+        }
+    }
 
     Column(Modifier.fillMaxSize().background(c.bg)) {
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -49,8 +82,12 @@ fun LoginScreen(onClose: () -> Unit, onGoldenKey: (String) -> Unit) {
                 Text("funpay.com", color = c.textMuted, fontSize = 12.sp)
             }
         }
+        Text(
+            hint, color = c.textMuted, fontSize = 12.sp,
+            modifier = Modifier.fillMaxWidth().background(c.section).padding(horizontal = 14.dp, vertical = 8.dp),
+        )
         AndroidView(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().navigationBarsPadding().imePadding(),
             factory = { ctx ->
                 val cm = CookieManager.getInstance()
                 cm.setAcceptCookie(true)
@@ -59,15 +96,7 @@ fun LoginScreen(onClose: () -> Unit, onGoldenKey: (String) -> Unit) {
                     settings.domStorageEnabled = true
                     cm.setAcceptThirdPartyCookies(this, true)
                     webViewClient = object : WebViewClient() {
-                        override fun onPageFinished(view: WebView, url: String) {
-                            if (done) return
-                            val cookies = cm.getCookie("https://funpay.com").orEmpty()
-                            val key = Regex("(?:^|;\\s*)golden_key=([^;]+)").find(cookies)?.groupValues?.get(1)
-                            if (!key.isNullOrBlank()) {
-                                done = true
-                                onGoldenKey(key)
-                            }
-                        }
+                        override fun onPageFinished(view: WebView, url: String) { check() }
                     }
                     loadUrl("https://funpay.com/account/login")
                 }

@@ -13,6 +13,8 @@ import lol.mrrabbitson.fpmini.core.OfferPage
 import lol.mrrabbitson.fpmini.core.OrderPage
 import lol.mrrabbitson.fpmini.core.TicketCategory
 import lol.mrrabbitson.fpmini.core.TicketForm
+import lol.mrrabbitson.fpmini.core.LotEditForm
+import lol.mrrabbitson.fpmini.core.LotFormParser
 import lol.mrrabbitson.fpmini.core.Parser
 import lol.mrrabbitson.fpmini.core.ProfilePage
 import lol.mrrabbitson.fpmini.core.SellerParser
@@ -98,6 +100,7 @@ class Repository(private val client: FpClient, private val prefs: Prefs) {
         val me = me()
         val objs = JSONArray()
         objs.put(JSONObject().put("type", "orders_counters").put("id", me.userId.toString()).put("tag", tag()).put("data", false))
+        objs.put(JSONObject().put("type", "chat_counter").put("id", me.userId.toString()).put("tag", tag()).put("data", false))
         if (withChats) objs.put(JSONObject().put("type", "chat_bookmarks").put("id", me.userId.toString()).put("tag", tag()).put("data", false))
         val json = runner(objs)
         var chats: List<ChatPreview>? = null
@@ -176,7 +179,14 @@ class Repository(private val client: FpClient, private val prefs: Prefs) {
     suspend fun raiseGame(gameId: Int, nodeIds: List<Int>, title: String): RaiseResult {
         val first = nodeIds.first()
         val base = listOf("game_id" to gameId.toString(), "node_id" to first.toString())
-        var json = JSONObject(client.post("/lots/raise", base + nodeIds.map { "node_ids[]" to it.toString() }, "${FpClient.BASE}/lots/$first/trade"))
+        val firstBody = base + nodeIds.map { "node_ids[]" to it.toString() }
+        var json = JSONObject(try {
+            client.post("/lots/raise", firstBody, "${FpClient.BASE}/lots/$first/trade")
+        } catch (e: FpException) {
+            if (e.code != 428) throw e
+            refreshSeal()
+            client.post("/lots/raise", firstBody, "${FpClient.BASE}/lots/$first/trade")
+        })
         val modal = json.optString("modal")
         if (modal.isNotBlank()) {
             val ids = Regex("value=\"(\\d+)\"").findAll(modal).mapNotNull { it.groupValues[1].toIntOrNull() }.toList()
@@ -310,5 +320,79 @@ class Repository(private val client: FpClient, private val prefs: Prefs) {
     suspend fun profile(id: Int): ProfilePage {
         val html = client.get("/users/$id/")
         return withContext(Dispatchers.Default) { Parser.profile(html, id) }
+    }
+
+    // ---------- вся история продаж ----------
+
+    @Volatile private var ordersCache: Pair<Long, List<Order>>? = null
+
+    /**
+     * Все продажи (страница за страницей, как кнопка «Показать ещё» на сайте).
+     * [onProgress] — сколько уже загружено. Кэш 5 минут.
+     */
+    suspend fun allOrders(force: Boolean = false, maxPages: Int = 60, onProgress: (Int) -> Unit = {}): List<Order> {
+        val cached = ordersCache
+        if (!force && cached != null && System.currentTimeMillis() - cached.first < 5 * 60_000) return cached.second
+        val out = linkedMapOf<String, Order>()
+        var html = client.get("/orders/trade")
+        for (page in 1..maxPages) {
+            val p = withContext(Dispatchers.Default) { SellerParser.ordersPage(html) }
+            p.orders.forEach { out.putIfAbsent(it.id, it) }
+            onProgress(out.size)
+            val token = p.continueToken ?: break
+            if (p.orders.isEmpty()) break
+            html = client.post("/orders/trade", listOf("continue" to token), "${FpClient.BASE}/orders/trade")
+        }
+        val list = out.values.toList()
+        ordersCache = System.currentTimeMillis() to list
+        return list
+    }
+
+    // ---------- редактирование лота ----------
+
+    /** Обновить куку golden_seal (её требуют сохранение лотов и поднятие). */
+    suspend fun refreshSeal() {
+        val me = me()
+        val objs = JSONArray().put(JSONObject().put("type", "chat_counter").put("id", me.userId.toString()).put("tag", tag()).put("data", false))
+        runCatching { runner(objs) }
+    }
+
+    suspend fun lotForm(offerId: String): LotEditForm {
+        me()
+        val html = client.get("/lots/offerEdit?offer=$offerId")
+        return withContext(Dispatchers.Default) {
+            try { LotFormParser.parse(html, offerId) } catch (e: IllegalStateException) { throw FpException(e.message ?: "Форма не загрузилась") }
+        }
+    }
+
+    /** Сохранить лот. Ошибки FunPay (например, неверная цена) — в тексте исключения. */
+    suspend fun saveLot(form: LotEditForm, values: Map<String, String>) {
+        val body = form.buildSave(values, me().csrf)
+        val referer = "${FpClient.BASE}/lots/offerEdit?offer=${form.offerId}"
+        val text = try {
+            client.post("/lots/offerSave", body, referer)
+        } catch (e: FpException) {
+            if (e.code != 428) throw e
+            refreshSeal()
+            client.post("/lots/offerSave", body, referer)
+        }
+        val json = runCatching { JSONObject(text) }.getOrNull() ?: return
+        val err = when (val e = json.opt("error")) {
+            is Boolean -> e
+            is Number -> e.toInt() != 0
+            is String -> e.isNotBlank() && e != "0" && e != "false"
+            else -> false
+        }
+        val errors = json.optJSONArray("errors")
+        val errObj = json.optJSONObject("errors")
+        if (!err && (errors == null || errors.length() == 0) && (errObj == null || errObj.length() == 0)) return
+        val parts = mutableListOf<String>()
+        json.optString("msg").takeIf { it.isNotBlank() }?.let { parts += it }
+        if (errors != null) for (k in 0 until errors.length()) {
+            val v = errors.opt(k)
+            parts += if (v is JSONArray) v.optString(1, v.optString(0)) else v.toString()
+        }
+        errObj?.keys()?.forEach { k -> parts += errObj.optString(k) }
+        throw FpException(parts.filter { it.isNotBlank() }.joinToString("\n").ifBlank { "FunPay не сохранил лот" })
     }
 }

@@ -41,7 +41,14 @@ data class Order(
     val date: String,
     val status: OrderStatus,
     val statusText: String,
-)
+    val timeMs: Long? = null,      // дата заказа в миллисекундах (для статистики)
+) {
+    /** «Discord, Услуги» → игра и подкатегория отдельно. */
+    val game: String get() = category.substringBefore(",").trim()
+    val subcategory: String get() = category.substringAfter(",", "").trim()
+}
+
+data class OrdersPage(val orders: List<Order>, val continueToken: String?)
 
 data class Ticket(
     val id: String,
@@ -78,6 +85,8 @@ data class MyLotGroup(
 data class OrderPage(
     val id: String,
     val status: String?,
+    val amount: String?,
+    val paidGoods: String?,      // выданный товар (если автовыдача — «скрыт»)
     val params: List<Param>,
     val buyer: UserShort?,
     val chatNode: String?,

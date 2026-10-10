@@ -62,7 +62,7 @@ import lol.mrrabbitson.fpmini.ui.YmSwitch
 import lol.mrrabbitson.fpmini.ui.theme.Ym
 
 @Composable
-fun SettingsScreen(app: App, onBack: () -> Unit) {
+fun SettingsScreen(app: App) {
     val c = Ym.colors
     val ctx = LocalContext.current
     val prefs = app.prefs
@@ -70,8 +70,8 @@ fun SettingsScreen(app: App, onBack: () -> Unit) {
     val account by prefs.account.collectAsState()
 
     Column(Modifier.fillMaxSize().background(c.bg)) {
-        TopBar("Настройки", onBack = onBack)
-        Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.navigationBars).verticalScroll(rememberScrollState()).padding(12.dp)) {
+        TopBar("Настройки")
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
 
             SectionLabel("Аккаунт", Modifier.padding(start = 4.dp, bottom = 6.dp))
             Card {
@@ -87,6 +87,8 @@ fun SettingsScreen(app: App, onBack: () -> Unit) {
                             AutomationService.stop(ctx)
                             prefs.setGoldenKey(null)
                             app.repo.clear()
+                            // чтобы встроенный браузер не вошёл обратно в старый аккаунт
+                            android.webkit.CookieManager.getInstance().removeAllCookies(null)
                         }.padding(6.dp),
                     )
                 }
