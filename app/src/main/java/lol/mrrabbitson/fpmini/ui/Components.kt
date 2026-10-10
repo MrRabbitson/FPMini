@@ -84,15 +84,19 @@ fun SectionLabel(text: String, modifier: Modifier = Modifier) {
     )
 }
 
+const val DEFAULT_AVATAR = "https://funpay.com/img/layout/avatar.png"
+
 @Composable
 fun Avatar(url: String?, size: Dp, name: String? = null, modifier: Modifier = Modifier) {
     val c = Ym.colors
     Box(modifier.size(size).clip(CircleShape).background(c.field), contentAlignment = Alignment.Center) {
+        // нет своей аватарки — стандартная аватарка FunPay (буква видна только пока картинка грузится)
         val letter = name?.firstOrNull()?.uppercaseChar()
         if (letter != null) Text(letter.toString(), color = c.textMuted, fontWeight = FontWeight.Bold, fontSize = (size.value * 0.4f).sp)
-        if (url != null && !url.endsWith("avatar.png")) {
-            AsyncImage(url, null, contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize())
-        }
+        AsyncImage(
+            url?.ifBlank { null } ?: DEFAULT_AVATAR, null,
+            contentScale = ContentScale.Crop, modifier = Modifier.fillMaxSize(),
+        )
     }
 }
 
