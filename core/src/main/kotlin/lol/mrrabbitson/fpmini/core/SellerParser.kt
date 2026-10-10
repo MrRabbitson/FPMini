@@ -176,4 +176,75 @@ object SellerParser {
             replyToken = d.selectFirst("input[name='add_comment[_token]']")?.attr("value"),
         )
     }
+
+    // ---------- страница заказа ----------
+
+    fun order(html: String, id: String): OrderPage {
+        val d = Parser.doc(html)
+        val params = d.select(".param-item").mapNotNull { p ->
+            val label = p.selectFirst("h5")?.text()?.trim() ?: return@mapNotNull null
+            val clone = p.clone(); clone.select("h5").remove()
+            val v = Parser.textWithBreaks(clone)
+            if (v.isBlank()) null else Param(label, v)
+        }.distinctBy { it.label }
+        val status = d.selectFirst(".page-header .text-success, .page-header .text-warning, .page-header .text-primary, h1 + .text-muted, .order-status")
+            ?.text()?.trim()?.ifBlank { null }
+        // собеседник в чате заказа — это покупатель
+        val nameLink = d.selectFirst(".chat-header .media-user-name a")
+        val media = nameLink?.parents()?.firstOrNull { it.hasClass("media") }
+        val buyer = nameLink?.let {
+            UserShort(Parser.userIdFromHref(it.attr("href")), it.text().trim(), Parser.imageUrl(media?.selectFirst(".avatar-photo")),
+                media?.selectFirst(".media-user-status")?.text()?.trim())
+        }
+        val chatNode = d.selectFirst(".chat[data-id]")?.attr("data-id")?.ifBlank { null }
+            ?: d.selectFirst("[data-name^='users-']")?.attr("data-name")
+        return OrderPage(id, status, params.filterNot { it.label.contains("чат", true) }, buyer, chatNode,
+            canRefund = d.selectFirst("button.btn-refund") != null)
+    }
+
+    // ---------- новая заявка ----------
+
+    fun ticketCategories(html: String): List<TicketCategory> =
+        Parser.doc(html, "https://support.funpay.com").select("select#ticket_select_form option, select[name*=form] option").mapNotNull { o ->
+            val v = o.attr("value").trim(); val t = o.text().trim()
+            if (v.isEmpty() || t.startsWith("Выберите")) null else TicketCategory(v, t)
+        }.distinctBy { it.id }
+
+    fun ticketForm(html: String, categoryId: String): TicketForm {
+        val d = Parser.doc(html, "https://support.funpay.com")
+        val fields = mutableListOf<TicketField>()
+        for (el in d.select("input[name^='ticket[fields]'], select[name^='ticket[fields]'], textarea[name^='ticket[comment]']")) {
+            val name = el.attr("name")
+            if (name.contains("_token") || name.contains("attachments")) continue
+            if (el.attr("type") == "hidden") continue
+            if (fields.any { it.name == name }) continue
+            val box = el.closest(".mb-3") ?: el.closest("fieldset") ?: el.parent()
+            val labelEl = box?.selectFirst("label[for='${el.id()}']")?.takeIf { el.id().isNotBlank() }
+                ?: box?.selectFirst("legend") ?: box?.selectFirst("label")
+            val rawLabel = labelEl?.text()?.trim().orEmpty()
+            val required = el.hasAttr("required") || labelEl?.hasClass("required") == true || rawLabel.contains("*")
+            val label = rawLabel.replace("*", "").trim()
+            when {
+                el.tagName() == "select" -> fields += TicketField(name, label, "select", required,
+                    el.select("option").mapNotNull { o ->
+                        val v = o.attr("value"); val t = o.text().trim()
+                        if (v.isEmpty() || t.startsWith("Выберите")) null else FieldOption(v, t)
+                    })
+                el.attr("type") == "radio" -> {
+                    val group = (el.closest("fieldset") ?: box)?.select("input[type=radio][name='$name']") ?: listOf(el)
+                    val opts = group.mapNotNull { r ->
+                        val l = (r.closest("fieldset") ?: box)?.selectFirst("label[for='${r.id()}']")?.text()?.trim()
+                        if (r.attr("value").isEmpty()) null else FieldOption(r.attr("value"), l ?: r.attr("value"))
+                    }
+                    val legend = (el.closest("fieldset")?.selectFirst("legend")?.text() ?: label).replace("*", "").trim()
+                    fields += TicketField(name, legend, "radio", required, opts)
+                }
+                el.tagName() == "textarea" -> fields += TicketField(name, if (name.contains("comment")) "Сообщение" else label, "textarea", required, emptyList())
+                else -> fields += TicketField(name, label, "text", required, emptyList())
+            }
+        }
+        // поле сообщения есть всегда, даже если на странице оно сделано редактором
+        if (fields.none { it.kind == "textarea" }) fields += TicketField("ticket[comment][body_html]", "Сообщение", "textarea", true, emptyList())
+        return TicketForm(categoryId, fields, d.selectFirst("input[name='ticket[_token]']")?.attr("value"))
+    }
 }

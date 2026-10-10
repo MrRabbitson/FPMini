@@ -1,9 +1,5 @@
 package lol.mrrabbitson.fpmini.ui
 
-import android.content.Context
-import android.content.Intent
-import android.net.Uri
-import androidx.browser.customtabs.CustomTabsIntent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -45,14 +41,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import lol.mrrabbitson.fpmini.ui.theme.Ym
-
-fun openUrl(context: Context, url: String) {
-    try {
-        CustomTabsIntent.Builder().setShowTitle(true).build().launchUrl(context, Uri.parse(url))
-    } catch (_: Exception) {
-        runCatching { context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url)).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
-    }
-}
 
 // ---------- шапка ----------
 
@@ -220,4 +208,50 @@ fun ListRow(
 @Composable
 fun Dot(color: Color, size: Dp = 8.dp) {
     Box(Modifier.size(size).clip(CircleShape).background(color))
+}
+
+/** Переключатель: в выключенном состоянии — серый ползунок на светлой дорожке с рамкой. */
+@Composable
+fun YmSwitch(checked: Boolean, onChange: (Boolean) -> Unit, modifier: Modifier = Modifier) {
+    val c = Ym.colors
+    androidx.compose.material3.Switch(
+        checked = checked,
+        onCheckedChange = onChange,
+        modifier = modifier,
+        colors = androidx.compose.material3.SwitchDefaults.colors(
+            checkedThumbColor = c.onAccent,
+            checkedTrackColor = c.accent,
+            checkedBorderColor = c.accent,
+            uncheckedThumbColor = c.textMuted,
+            uncheckedTrackColor = c.field,
+            uncheckedBorderColor = c.textMuted.copy(alpha = 0.6f),
+        ),
+    )
+}
+
+/** Картинка на весь экран (из чата), без перехода в браузер. */
+@Composable
+fun ImageViewer(url: String, onClose: () -> Unit) {
+    androidx.compose.ui.window.Dialog(
+        onDismissRequest = onClose,
+        properties = androidx.compose.ui.window.DialogProperties(usePlatformDefaultWidth = false),
+    ) {
+        Box(
+            Modifier.fillMaxSize().background(Color.Black).clickable(onClick = onClose),
+            contentAlignment = Alignment.Center,
+        ) {
+            AsyncImage(url, null, contentScale = ContentScale.Fit, modifier = Modifier.fillMaxSize())
+        }
+    }
+}
+
+/** Пара «подпись — значение» для страниц заказа и лота. */
+@Composable
+fun ParamRow(label: String, value: String) {
+    val c = Ym.colors
+    Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 9.dp)) {
+        Text(label, color = c.textMuted, fontSize = 12.sp)
+        Spacer(Modifier.height(2.dp))
+        Text(value, color = c.text, fontSize = 14.sp, lineHeight = 19.sp)
+    }
 }

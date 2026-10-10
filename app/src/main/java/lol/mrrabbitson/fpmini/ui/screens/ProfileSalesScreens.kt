@@ -64,7 +64,6 @@ import lol.mrrabbitson.fpmini.ui.PrimaryButton
 import lol.mrrabbitson.fpmini.ui.SecondaryButton
 import lol.mrrabbitson.fpmini.ui.SectionLabel
 import lol.mrrabbitson.fpmini.ui.TopBar
-import lol.mrrabbitson.fpmini.ui.openUrl
 import lol.mrrabbitson.fpmini.ui.rememberLoad
 import lol.mrrabbitson.fpmini.ui.theme.Ym
 import java.util.Locale
@@ -75,7 +74,7 @@ private data class MyData(val me: Me, val profile: ProfilePage, val groups: List
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MyProfileScreen(repo: Repository, snackbar: SnackbarHostState, onSettings: () -> Unit) {
+fun MyProfileScreen(repo: Repository, snackbar: SnackbarHostState, onSettings: () -> Unit, onLot: (type: String, id: String) -> Unit) {
     val c = Ym.colors
     val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -126,7 +125,7 @@ fun MyProfileScreen(repo: Repository, snackbar: SnackbarHostState, onSettings: (
                                             Text(" $it", color = c.text, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
                                             Text("  ·  ", color = c.textMuted, fontSize = 13.sp)
                                         }
-                                        Text(d.profile.reviewsTotal ?: d.profile.rating?.countText ?: "нет отзывов", color = c.textMuted, fontSize = 13.sp)
+                                        Text(d.profile.reviewsTotal ?: d.profile.rating?.countText ?: "Нет отзывов", color = c.textMuted, fontSize = 13.sp)
                                     }
                                 }
                             }
@@ -141,9 +140,25 @@ fun MyProfileScreen(repo: Repository, snackbar: SnackbarHostState, onSettings: (
                                 PrimaryButton(if (raising == -1) "Поднимаю…" else "Поднять все лоты", Modifier.weight(1f), enabled = raising == null) {
                                     raise(null, d.groups)
                                 }
-                                SecondaryButton("На сайте") { openUrl(ctx, "https://funpay.com/users/${d.me.userId}/") }
                             }
                         }
+                    }
+                    item {
+                        Card(Modifier.padding(horizontal = 12.dp)) {
+                            Row(
+                                Modifier.fillMaxWidth().clickable(onClick = onSettings).padding(14.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Icon(Icons.Filled.Settings, null, tint = c.accent, modifier = Modifier.size(20.dp))
+                                Spacer(Modifier.width(12.dp))
+                                Column(Modifier.weight(1f)) {
+                                    Text("Настройки и темы", color = c.text, fontWeight = FontWeight.SemiBold, fontSize = 15.sp)
+                                    Text("Цвета, тёмная тема, скругление, размер текста, выход", color = c.textMuted, fontSize = 12.sp)
+                                }
+                                Text("›", color = c.textMuted, fontSize = 20.sp)
+                            }
+                        }
+                        Spacer(Modifier.height(4.dp))
                     }
                     if (d.groups.isEmpty()) item { EmptyState("У вас пока нет лотов") }
                     d.groups.forEach { g ->
@@ -152,8 +167,7 @@ fun MyProfileScreen(repo: Repository, snackbar: SnackbarHostState, onSettings: (
                                 Modifier.fillMaxWidth().padding(start = 16.dp, end = 8.dp, top = 14.dp, bottom = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                Text(g.title, color = c.accent, fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.weight(1f)
-                                    .clickable { openUrl(ctx, "https://funpay.com/${g.type}/${g.nodeId}/trade") })
+                                Text(g.title, color = c.accent, fontWeight = FontWeight.Bold, fontSize = 15.sp, modifier = Modifier.weight(1f))
                                 Text("${g.offers.size}", color = c.textMuted, fontSize = 13.sp)
                                 if (g.type == "lots" && g.gameId != null) {
                                     Spacer(Modifier.width(8.dp))
@@ -171,7 +185,7 @@ fun MyProfileScreen(repo: Repository, snackbar: SnackbarHostState, onSettings: (
                         items(g.offers, key = { "o${g.type}${it.id}" }) { o ->
                             Row(
                                 Modifier.fillMaxWidth()
-                                    .clickable { openUrl(ctx, "https://funpay.com/${o.type}/offer?id=${o.id}") }
+                                    .clickable { onLot(o.type, o.id) }
                                     .padding(horizontal = 16.dp, vertical = 9.dp),
                             ) {
                                 Column(Modifier.weight(1f)) {
@@ -211,7 +225,7 @@ private fun statusColor(s: OrderStatus, c: lol.mrrabbitson.fpmini.ui.theme.YmCol
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SalesScreen(repo: Repository, onChatWith: (userId: Int, name: String) -> Unit) {
+fun SalesScreen(repo: Repository, onOrder: (id: String) -> Unit) {
     val c = Ym.colors
     val ctx = LocalContext.current
     var filter by rememberSaveable { mutableStateOf<String?>(null) } // null | PAID | CLOSED | REFUND
@@ -250,10 +264,7 @@ fun SalesScreen(repo: Repository, onChatWith: (userId: Int, name: String) -> Uni
                     }
                     if (shown.isEmpty()) item { EmptyState("Заказов нет") }
                     items(shown, key = { it.id }) { o ->
-                        OrderRow(o,
-                            onChat = { o.buyer?.id?.let { id -> onChatWith(id, o.buyer?.name ?: "") } },
-                            onOpen = { openUrl(ctx, "https://funpay.com/orders/${o.id}/") },
-                        )
+                        OrderRow(o) { onOrder(o.id) }
                         HorizontalDivider(color = c.divider, modifier = Modifier.padding(start = 16.dp))
                     }
                     item { Spacer(Modifier.height(24.dp)) }
@@ -264,31 +275,24 @@ fun SalesScreen(repo: Repository, onChatWith: (userId: Int, name: String) -> Uni
 }
 
 @Composable
-private fun OrderRow(o: Order, onChat: () -> Unit, onOpen: () -> Unit) {
+private fun OrderRow(o: Order, onClick: () -> Unit) {
     val c = Ym.colors
-    var menu by remember { mutableStateOf(false) }
-    Box {
-        Row(Modifier.fillMaxWidth().clickable { menu = true }.padding(horizontal = 16.dp, vertical = 10.dp)) {
-            Column(Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("#${o.id}", color = c.textMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
-                    Spacer(Modifier.width(6.dp))
-                    Chip(o.statusText, statusColor(o.status, c))
-                    Spacer(Modifier.weight(1f))
-                    Text(o.date, color = c.textMuted, fontSize = 12.sp)
-                }
-                Spacer(Modifier.height(3.dp))
-                Text(o.description, color = c.text, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                val sub = listOfNotNull(o.category.ifBlank { null }, o.buyer?.name).joinToString(" · ")
-                if (sub.isNotBlank()) Text(sub, color = c.textMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+    Row(Modifier.fillMaxWidth().clickable(onClick = onClick).padding(horizontal = 16.dp, vertical = 10.dp)) {
+        Column(Modifier.weight(1f)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("#${o.id}", color = c.textMuted, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                Spacer(Modifier.width(6.dp))
+                Chip(o.statusText.replaceFirstChar { it.uppercase() }, statusColor(o.status, c))
+                Spacer(Modifier.weight(1f))
+                Text(o.date, color = c.textMuted, fontSize = 12.sp)
             }
-            Spacer(Modifier.width(12.dp))
-            Text(o.priceText, color = c.text, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Spacer(Modifier.height(3.dp))
+            Text(o.description.replaceFirstChar { it.uppercase() }, color = c.text, fontSize = 14.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            val sub = listOfNotNull(o.category.ifBlank { null }, o.buyer?.name?.let { "Покупатель: $it" }).joinToString(" · ")
+            if (sub.isNotBlank()) Text(sub, color = c.textMuted, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
         }
-        DropdownMenu(expanded = menu, onDismissRequest = { menu = false }) {
-            if (o.buyer?.id != null) DropdownMenuItem(text = { Text("Написать покупателю") }, onClick = { menu = false; onChat() })
-            DropdownMenuItem(text = { Text("Открыть заказ на сайте") }, onClick = { menu = false; onOpen() })
-        }
+        Spacer(Modifier.width(12.dp))
+        Text(o.priceText, color = c.text, fontWeight = FontWeight.Bold, fontSize = 14.sp)
     }
 }
 

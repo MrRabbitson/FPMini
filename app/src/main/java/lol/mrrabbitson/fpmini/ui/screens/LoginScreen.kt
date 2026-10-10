@@ -88,7 +88,7 @@ fun LoginGate(onWebLogin: () -> Unit, onKey: (String) -> Unit, busy: Boolean, er
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("FPMini", color = c.text, fontWeight = FontWeight.Black, fontSize = 30.sp)
-            Text("неофициальный клиент FunPay для продавцов", color = c.textMuted, fontSize = 13.sp)
+            Text("Неофициальный клиент FunPay для продавцов", color = c.textMuted, fontSize = 13.sp)
             androidx.compose.foundation.layout.Spacer(Modifier.padding(16.dp))
             lol.mrrabbitson.fpmini.ui.PrimaryButton(if (busy) "Проверяю вход…" else "Войти через funpay.com", Modifier.fillMaxWidth(), enabled = !busy, onClick = onWebLogin)
             androidx.compose.foundation.layout.Spacer(Modifier.padding(4.dp))

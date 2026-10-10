@@ -56,7 +56,6 @@ import lol.mrrabbitson.fpmini.ui.Chip
 import lol.mrrabbitson.fpmini.ui.EmptyState
 import lol.mrrabbitson.fpmini.ui.LoadBox
 import lol.mrrabbitson.fpmini.ui.TopBar
-import lol.mrrabbitson.fpmini.ui.openUrl
 import lol.mrrabbitson.fpmini.ui.rememberLoad
 import lol.mrrabbitson.fpmini.ui.theme.Ym
 
@@ -70,20 +69,20 @@ private fun ticketColor(kind: String, accent: Color): Color = when (kind) {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SupportScreen(repo: Repository, onOpen: (id: String, title: String) -> Unit) {
+fun SupportScreen(repo: Repository, onOpen: (id: String, title: String) -> Unit, onNew: () -> Unit) {
     val c = Ym.colors
     val ctx = LocalContext.current
     val state = rememberLoad("tickets") { repo.tickets() }
     Column(Modifier.fillMaxSize().background(c.bg)) {
         TopBar("Заявки в поддержку", actions = {
-            IconButton(onClick = { openUrl(ctx, "https://support.funpay.com/tickets/new") }) {
+            IconButton(onClick = onNew) {
                 Icon(Icons.Filled.Add, "Новая заявка", tint = c.accent)
             }
         })
         LoadBox(state) { list ->
             PullToRefreshBox(isRefreshing = state.loading, onRefresh = { state.refresh() }, modifier = Modifier.fillMaxSize()) {
                 LazyColumn(Modifier.fillMaxSize()) {
-                    if (list.isEmpty()) item { EmptyState("Заявок нет", "Новую заявку можно создать кнопкой + вверху") }
+                    if (list.isEmpty()) item { EmptyState("Заявок нет", "Новую заявку можно создать кнопкой «+» вверху.") }
                     items(list, key = { it.id }) { t ->
                         Column(
                             Modifier.fillMaxWidth().clickable { onOpen(t.id, t.title) }.padding(horizontal = 16.dp, vertical = 11.dp),

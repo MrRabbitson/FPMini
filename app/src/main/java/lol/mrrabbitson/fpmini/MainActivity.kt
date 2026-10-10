@@ -7,7 +7,20 @@ import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Build
@@ -52,6 +65,9 @@ import lol.mrrabbitson.fpmini.ui.screens.ChatScreen
 import lol.mrrabbitson.fpmini.ui.screens.ChatsScreen
 import lol.mrrabbitson.fpmini.ui.screens.LoginGate
 import lol.mrrabbitson.fpmini.ui.screens.LoginScreen
+import lol.mrrabbitson.fpmini.ui.screens.LotScreen
+import lol.mrrabbitson.fpmini.ui.screens.NewTicketScreen
+import lol.mrrabbitson.fpmini.ui.screens.OrderScreen
 import lol.mrrabbitson.fpmini.ui.screens.MyProfileScreen
 import lol.mrrabbitson.fpmini.ui.screens.SalesScreen
 import lol.mrrabbitson.fpmini.ui.screens.SettingsScreen
@@ -158,35 +174,17 @@ private fun MainUi(app: App, intent: Intent?, consumeIntent: () -> Unit) {
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
-            if (Tab.entries.any { it.route == route }) {
-                NavigationBar(containerColor = c.card, tonalElevation = androidx.compose.ui.unit.Dp(0f)) {
-                    Tab.entries.forEach { t ->
-                        NavigationBarItem(
-                            selected = route == t.route,
-                            onClick = { nav.openTab(t.route) },
-                            icon = { Icon(t.icon, t.label) },
-                            label = { Text(t.label, fontSize = 11.sp) },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = c.accent, selectedTextColor = c.accent,
-                                indicatorColor = c.accent.copy(alpha = 0.14f),
-                                unselectedIconColor = c.textMuted, unselectedTextColor = c.textMuted,
-                            ),
-                        )
-                    }
-                }
-            }
+            if (Tab.entries.any { it.route == route }) BottomBar(route) { nav.openTab(it) }
         },
     ) { pad ->
         NavHost(nav, startDestination = Tab.CHATS.route, modifier = Modifier.padding(pad)) {
             composable(Tab.CHATS.route) { ChatsScreen(app.repo, openChat) }
-            composable(Tab.PROFILE.route) { MyProfileScreen(app.repo, snackbar) { nav.navigate("settings") } }
+            composable(Tab.PROFILE.route) { MyProfileScreen(app.repo, snackbar, onSettings = { nav.navigate("settings") }, onLot = { t, id -> nav.navigate("lot/$t/$id") }) }
             composable(Tab.SALES.route) {
-                SalesScreen(app.repo) { uid, name ->
-                    scopeNavigateToChat(app, nav, uid, name)
-                }
+                SalesScreen(app.repo) { id -> nav.navigate("order/$id") }
             }
             composable(Tab.SUPPORT.route) {
-                SupportScreen(app.repo) { id, title -> nav.navigate("ticket/$id?title=${Uri.encode(title)}") }
+                SupportScreen(app.repo, onOpen = { id, title -> nav.navigate("ticket/$id?title=${Uri.encode(title)}") }, onNew = { nav.navigate("ticket_new") })
             }
             composable(Tab.AUTO.route) { AutomationScreen(app.prefs, app.repo, app.log, snackbar) }
             composable(
@@ -220,13 +218,49 @@ private fun MainUi(app: App, intent: Intent?, consumeIntent: () -> Unit) {
                 )
             }
             composable("settings") { SettingsScreen(app) { nav.popBackStack() } }
+            composable("order/{id}", arguments = listOf(navArgument("id") { type = NavType.StringType })) { e ->
+                OrderScreen(app.repo, e.arguments?.getString("id").orEmpty(), onBack = { nav.popBackStack() }, onChat = openChat)
+            }
+            composable(
+                "lot/{type}/{id}",
+                arguments = listOf(navArgument("type") { type = NavType.StringType }, navArgument("id") { type = NavType.StringType }),
+            ) { e ->
+                LotScreen(app.repo, e.arguments?.getString("type") ?: "lots", e.arguments?.getString("id").orEmpty()) { nav.popBackStack() }
+            }
+            composable("ticket_new") {
+                NewTicketScreen(app.repo, snackbar, onBack = { nav.popBackStack() }) { id ->
+                    nav.popBackStack()
+                    if (id != null) nav.navigate("ticket/$id?title=")
+                }
+            }
         }
     }
 }
 
-/** Чат с покупателем из «Моих продаж»: узел users-A-B считается по id. */
-private fun scopeNavigateToChat(app: App, nav: NavHostController, userId: Int, name: String) {
-    val me = app.prefs.account.value.userId ?: return
-    val node = "users-${minOf(me, userId)}-${maxOf(me, userId)}"
-    nav.navigate("chat/$node?name=${Uri.encode(name)}")
+/** Нижняя панель: подписи всегда целиком, без обрезки. */
+@Composable
+private fun BottomBar(route: String?, onTab: (String) -> Unit) {
+    val c = Ym.colors
+    androidx.compose.foundation.layout.Column(Modifier.background(c.card).navigationBarsPadding()) {
+        androidx.compose.material3.HorizontalDivider(color = c.divider)
+        Row(Modifier.fillMaxWidth().height(58.dp)) {
+            Tab.entries.forEach { t ->
+                val sel = route == t.route
+                val col = if (sel) c.accent else c.textMuted
+                androidx.compose.foundation.layout.Column(
+                    Modifier.weight(1f).fillMaxHeight().clickable { onTab(t.route) },
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    Icon(t.icon, null, tint = col, modifier = Modifier.size(22.dp))
+                    Spacer(Modifier.height(3.dp))
+                    Text(
+                        t.label, color = col, fontSize = (10.5f / androidx.compose.ui.platform.LocalDensity.current.fontScale).sp, maxLines = 1, softWrap = false,
+                        fontWeight = if (sel) FontWeight.SemiBold else FontWeight.Normal,
+                        letterSpacing = 0.sp,
+                    )
+                }
+            }
+        }
+    }
 }

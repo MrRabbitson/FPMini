@@ -100,14 +100,14 @@ fun YmTheme(settings: ThemeSettings, content: @Composable () -> Unit) {
         background = c.bg, onBackground = c.text,
         surface = c.bg, onSurface = c.text,
         surfaceVariant = c.field, onSurfaceVariant = c.textMuted,
-        surfaceContainer = c.card, surfaceContainerHigh = c.card, surfaceContainerLow = c.bg,
+        surfaceContainer = c.card, surfaceContainerHigh = c.card, surfaceContainerHighest = c.field, surfaceContainerLow = c.bg,
         outline = c.border, outlineVariant = c.divider,
     ) else lightColorScheme(
         primary = c.accent, onPrimary = c.onAccent,
         background = c.bg, onBackground = c.text,
         surface = c.bg, onSurface = c.text,
         surfaceVariant = c.field, onSurfaceVariant = c.textMuted,
-        surfaceContainer = c.card, surfaceContainerHigh = c.card, surfaceContainerLow = c.bg,
+        surfaceContainer = c.card, surfaceContainerHigh = c.card, surfaceContainerHighest = c.field, surfaceContainerLow = c.bg,
         outline = c.border, outlineVariant = c.divider,
     )
     val density = LocalDensity.current

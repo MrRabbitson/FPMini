@@ -53,6 +53,7 @@ import lol.mrrabbitson.fpmini.ui.Chip
 import lol.mrrabbitson.fpmini.ui.PrimaryButton
 import lol.mrrabbitson.fpmini.ui.SectionLabel
 import lol.mrrabbitson.fpmini.ui.TopBar
+import lol.mrrabbitson.fpmini.ui.YmSwitch
 import lol.mrrabbitson.fpmini.ui.theme.Ym
 
 @Composable
@@ -101,7 +102,7 @@ fun SettingsScreen(app: App, onBack: () -> Unit) {
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text("Чёрный фон (AMOLED)", color = c.text, fontSize = 14.sp, modifier = Modifier.weight(1f))
-                    Switch(theme.amoled, { v -> prefs.updateTheme { it.copy(amoled = v) } }, colors = SwitchDefaults.colors(checkedTrackColor = c.accent))
+                    YmSwitch(theme.amoled, { v -> prefs.updateTheme { it.copy(amoled = v) } })
                 }
                 HorizontalDivider(color = c.divider)
                 Column(Modifier.padding(14.dp)) {

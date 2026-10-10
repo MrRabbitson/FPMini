@@ -64,7 +64,7 @@ import lol.mrrabbitson.fpmini.ui.EmptyState
 import lol.mrrabbitson.fpmini.ui.ListRow
 import lol.mrrabbitson.fpmini.ui.LoadBox
 import lol.mrrabbitson.fpmini.ui.TopBar
-import lol.mrrabbitson.fpmini.ui.openUrl
+import lol.mrrabbitson.fpmini.ui.ImageViewer
 import lol.mrrabbitson.fpmini.ui.rememberLoad
 import lol.mrrabbitson.fpmini.ui.theme.Ym
 
@@ -119,7 +119,6 @@ fun ChatScreen(
     onBack: () -> Unit,
 ) {
     val c = Ym.colors
-    val ctx = LocalContext.current
     val scope = rememberCoroutineScope()
     val account by prefs.account.collectAsState()
     val auto by prefs.auto.collectAsState()
@@ -127,6 +126,7 @@ fun ChatScreen(
     var text by rememberSaveable(node) { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
     var showTemplates by remember { mutableStateOf(false) }
+    var image by remember { mutableStateOf<String?>(null) }
     val templates = remember(auto) {
         (listOf(auto.greetText) + auto.rules.map { it.reply }).filter { it.isNotBlank() }.distinct()
     }
@@ -152,7 +152,7 @@ fun ChatScreen(
                         verticalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
                         items(msgs.asReversed(), key = { it.id }) { m ->
-                            Bubble(m, mine = m.authorId == account.userId) { url -> openUrl(ctx, url) }
+                            Bubble(m, mine = m.authorId == account.userId) { url -> image = url }
                         }
                     }
                 }
@@ -173,6 +173,7 @@ fun ChatScreen(
                 }
             }
         }
+        image?.let { ImageViewer(it) { image = null } }
         HorizontalDivider(color = c.divider)
         Row(Modifier.fillMaxWidth().padding(start = 4.dp, end = 8.dp, top = 6.dp, bottom = 6.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { showTemplates = !showTemplates }, enabled = templates.isNotEmpty()) {

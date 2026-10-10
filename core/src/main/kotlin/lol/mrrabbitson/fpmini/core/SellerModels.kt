@@ -70,3 +70,28 @@ data class MyLotGroup(
     val gameId: Int?,
     val offers: List<OfferRow>,
 )
+
+/** Страница заказа. */
+data class OrderPage(
+    val id: String,
+    val status: String?,
+    val params: List<Param>,
+    val buyer: UserShort?,
+    val chatNode: String?,
+    val canRefund: Boolean,
+)
+
+data class TicketCategory(val id: String, val name: String)
+
+data class FieldOption(val value: String, val label: String)
+
+/** Поле формы новой заявки. kind: text | textarea | select | radio */
+data class TicketField(
+    val name: String,
+    val label: String,
+    val kind: String,
+    val required: Boolean,
+    val options: List<FieldOption>,
+)
+
+data class TicketForm(val categoryId: String, val fields: List<TicketField>, val token: String?)

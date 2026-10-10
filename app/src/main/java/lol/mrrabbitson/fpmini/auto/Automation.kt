@@ -78,7 +78,7 @@ class Automation(
         if (a.greet || a.rulesEnabled) parts += "автоответы"
         if (a.raise) parts += "поднятие"
         if (a.notifyMessages || a.notifyOrders) parts += "уведомления"
-        val base = if (parts.isEmpty()) "ничего не включено" else parts.joinToString(" · ")
+        val base = if (parts.isEmpty()) "Ничего не включено" else parts.joinToString(" · ").replaceFirstChar { it.uppercase() }
         return if (seller != null && seller > 0) "$base · активных продаж: $seller" else base
     }
 
@@ -153,7 +153,7 @@ class Automation(
         val fresh = paid.filter { it.id !in known }
         if (!init) {
             fresh.forEach { o ->
-                val text = listOfNotNull(o.description.ifBlank { null }, o.buyer?.name?.let { "покупатель $it" }, o.priceText.ifBlank { null })
+                val text = listOfNotNull(o.description.ifBlank { null }, o.buyer?.name?.let { "Покупатель: $it" }, o.priceText.ifBlank { null })
                     .joinToString(" · ")
                 Notifier.order(ctx, o.id, text)
                 log.add(EventKind.OK, "Новый заказ #${o.id}: ${o.priceText}")

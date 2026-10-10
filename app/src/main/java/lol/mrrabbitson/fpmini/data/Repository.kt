@@ -9,6 +9,10 @@ import lol.mrrabbitson.fpmini.core.ChatPage
 import lol.mrrabbitson.fpmini.core.ChatPreview
 import lol.mrrabbitson.fpmini.core.MyLotGroup
 import lol.mrrabbitson.fpmini.core.Order
+import lol.mrrabbitson.fpmini.core.OfferPage
+import lol.mrrabbitson.fpmini.core.OrderPage
+import lol.mrrabbitson.fpmini.core.TicketCategory
+import lol.mrrabbitson.fpmini.core.TicketForm
 import lol.mrrabbitson.fpmini.core.Parser
 import lol.mrrabbitson.fpmini.core.ProfilePage
 import lol.mrrabbitson.fpmini.core.SellerParser
@@ -239,7 +243,7 @@ class Repository(private val client: FpClient, private val prefs: Prefs) {
     suspend fun replyTicket(id: String, text: String) {
         val page = ticket(id)
         val token = page.replyToken ?: throw FpException("Заявка закрыта или форма ответа недоступна")
-        val html = "<p>" + text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>") + "</p>"
+        val html = toHtml(text)
         client.post(
             "${FpClient.SUPPORT}/tickets/$id/comments/create",
             listOf(
@@ -249,5 +253,55 @@ class Repository(private val client: FpClient, private val prefs: Prefs) {
             ),
             "${FpClient.SUPPORT}/tickets/$id",
         )
+    }
+
+    // ---------- заказ и лот (внутри приложения) ----------
+
+    suspend fun order(id: String): OrderPage {
+        val html = client.get("/orders/$id/")
+        return withContext(Dispatchers.Default) { SellerParser.order(html, id) }
+    }
+
+    suspend fun offer(type: String, id: String): OfferPage {
+        val html = client.get("/$type/offer?id=$id")
+        return withContext(Dispatchers.Default) { Parser.offer(html, id) }
+    }
+
+    // ---------- новая заявка ----------
+
+    suspend fun ticketCategories(): List<TicketCategory> {
+        ensureSupport()
+        val html = client.get("${FpClient.SUPPORT}/tickets/new")
+        return withContext(Dispatchers.Default) { SellerParser.ticketCategories(html) }
+    }
+
+    suspend fun ticketForm(categoryId: String): TicketForm {
+        ensureSupport()
+        val html = client.get("${FpClient.SUPPORT}/tickets/new/$categoryId")
+        return withContext(Dispatchers.Default) { SellerParser.ticketForm(html, categoryId) }
+    }
+
+    private fun toHtml(text: String) =
+        "<p>" + text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace("\n", "<br>") + "</p>"
+
+    /** Создать заявку. Возвращает id новой заявки, если FunPay его вернул. */
+    suspend fun createTicket(form: TicketForm, values: Map<String, String>): String? {
+        val token = form.token ?: ticketForm(form.categoryId).token ?: throw FpException("Форма заявки недоступна")
+        val fields = mutableListOf<Pair<String, String>>()
+        form.fields.forEach { f ->
+            val v = values[f.name].orEmpty().trim()
+            if (f.required && v.isEmpty()) throw FpException("Заполните поле «${f.label.ifBlank { "Сообщение" }}»")
+            if (v.isEmpty()) return@forEach
+            fields += f.name to (if (f.kind == "textarea") toHtml(v) else v)
+        }
+        fields += "ticket[comment][attachments]" to ""
+        fields += "ticket[_token]" to token
+        val body = client.post("${FpClient.SUPPORT}/tickets/create/${form.categoryId}", fields, "${FpClient.SUPPORT}/tickets/new/${form.categoryId}")
+        val json = runCatching { JSONObject(body) }.getOrNull()
+        json?.optJSONObject("errors")?.let { e ->
+            val msg = e.keys().asSequence().mapNotNull { k -> e.optJSONArray(k)?.optString(0) ?: e.optString(k) }.firstOrNull()
+            throw FpException(msg ?: "FunPay не принял заявку")
+        }
+        return json?.optJSONObject("action")?.optString("url")?.trimEnd('/')?.substringAfterLast('/')?.ifBlank { null }
     }
 }

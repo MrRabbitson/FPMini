@@ -65,6 +65,7 @@ import lol.mrrabbitson.fpmini.ui.PrimaryButton
 import lol.mrrabbitson.fpmini.ui.SecondaryButton
 import lol.mrrabbitson.fpmini.ui.SectionLabel
 import lol.mrrabbitson.fpmini.ui.TopBar
+import lol.mrrabbitson.fpmini.ui.YmSwitch
 import lol.mrrabbitson.fpmini.ui.theme.Ym
 
 @SuppressLint("BatteryLife")
@@ -184,10 +185,9 @@ fun AutomationScreen(prefs: Prefs, repo: Repository, log: EventLog, snackbar: Sn
                                 Text(r.keywords.joinToString(", "), color = c.text, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
                                 Text("→ ${r.reply}", color = c.textMuted, fontSize = 13.sp, maxLines = 2, overflow = TextOverflow.Ellipsis)
                             }
-                            Switch(
+                            YmSwitch(
                                 checked = r.enabled,
-                                onCheckedChange = { v -> prefs.updateAuto { s -> s.copy(rules = s.rules.map { if (it.id == r.id) it.copy(enabled = v) else it }) } },
-                                colors = SwitchDefaults.colors(checkedTrackColor = c.accent),
+                                onChange = { v -> prefs.updateAuto { s -> s.copy(rules = s.rules.map { if (it.id == r.id) it.copy(enabled = v) else it }) } },
                                 modifier = Modifier.padding(horizontal = 4.dp),
                             )
                             IconButton(onClick = { editRule = r }) { Icon(Icons.Filled.Edit, "Изменить", tint = c.textMuted, modifier = Modifier.size(18.dp)) }
@@ -253,7 +253,7 @@ fun AutomationScreen(prefs: Prefs, repo: Repository, log: EventLog, snackbar: Sn
             title = { Text("Правило автоответа") },
             text = {
                 Column {
-                    OutlinedTextField(kw, { kw = it }, label = { Text("Ключевые слова через запятую") }, placeholder = { Text("цена, сколько, есть ли") })
+                    OutlinedTextField(kw, { kw = it }, label = { Text("Ключевые слова через запятую") }, placeholder = { Text("Цена, сколько, есть ли") })
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(reply, { reply = it }, label = { Text("Ответ") }, minLines = 3)
                 }
@@ -287,7 +287,7 @@ private fun SwitchRow(title: String, subtitle: String?, checked: Boolean, onChan
             if (subtitle != null) Text(subtitle, color = c.textMuted, fontSize = 12.sp)
         }
         Spacer(Modifier.width(8.dp))
-        Switch(checked, onChange, colors = SwitchDefaults.colors(checkedTrackColor = c.accent))
+        YmSwitch(checked, onChange)
     }
 }
 

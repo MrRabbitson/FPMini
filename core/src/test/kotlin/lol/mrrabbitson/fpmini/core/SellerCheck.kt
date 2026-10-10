@@ -130,4 +130,50 @@ fun main() {
     ok(tp.title == "Не пришли деньги" && tp.comments.size == 2 && tp.replyToken == "TOKEN1", "заявка: детали")
     ok(tp.comments[0].text == "Здравствуйте\nДеньги не пришли" && tp.comments[1].time == "9 окт, 13:00", "заявка: комментарии")
     println("ALL OK")
+    mainExtra()
+}
+
+private val ORDER = """
+<html><body>
+<h1 class="page-header">Заказ #ABC123 <span class="text-primary">Оплачен</span></h1>
+<div class="param-item"><h5>Игра</h5><div>Discord</div></div>
+<div class="param-item"><h5>Краткое описание</h5><div>Участники 100 шт.</div></div>
+<div class="param-item"><h5>Сумма</h5><div>3.50 ₽</div></div>
+<button class="btn btn-default btn-refund">Вернуть деньги</button>
+<div class="chat" data-id="123456" data-name="users-7-42">
+ <div class="chat-header"><div class="media"><div class="media-body"><div class="media-user-name"><a href="https://funpay.com/users/42/">Buyer1</a></div><div class="media-user-status">Онлайн</div></div></div></div>
+</div>
+</body></html>
+"""
+
+private val NEW_TICKET = """
+<html><body><select id="ticket_select_form"><option value="">Выберите вариант...</option><option value="1">Проблема с заказом</option><option value="2">Вопрос по выплате</option></select></body></html>
+"""
+
+private val TICKET_FORM = """
+<html><body><form>
+<div class="mb-3"><label for="f1" class="required">Номер заказа *</label><input id="f1" type="text" name="ticket[fields][1]"></div>
+<fieldset><legend>Ваша роль *</legend>
+ <input type="radio" id="r1" name="ticket[fields][2]" value="1"><label for="r1">Продавец</label>
+ <input type="radio" id="r2" name="ticket[fields][2]" value="2"><label for="r2">Покупатель</label>
+</fieldset>
+<div class="mb-3"><label for="s1">Игра</label><select id="s1" name="ticket[fields][3]"><option value="">Выберите</option><option value="10">Discord</option></select></div>
+<div class="mb-3"><label>Сообщение</label><textarea name="ticket[comment][body_html]"></textarea></div>
+<input type="hidden" name="ticket[_token]" value="TK">
+</form></body></html>
+"""
+
+fun mainExtra() {
+    val o = SellerParser.order(ORDER, "ABC123")
+    ok(o.params.size == 3 && o.params[2].value == "3.50 ₽", "заказ: параметры")
+    ok(o.buyer?.id == 42 && o.chatNode == "123456" && o.canRefund, "заказ: покупатель/чат/возврат")
+    ok(o.status == "Оплачен", "заказ: статус ${o.status}")
+    val cats = SellerParser.ticketCategories(NEW_TICKET)
+    ok(cats.map { it.id } == listOf("1", "2"), "новая заявка: категории")
+    val f = SellerParser.ticketForm(TICKET_FORM, "1")
+    ok(f.token == "TK" && f.fields.size == 4, "форма: ${f.fields.map { it.label + "/" + it.kind }}")
+    ok(f.fields[0].label == "Номер заказа" && f.fields[0].required, "форма: текстовое обязательное")
+    ok(f.fields[1].kind == "radio" && f.fields[1].options.map { it.label } == listOf("Продавец", "Покупатель") && f.fields[1].label == "Ваша роль", "форма: радио")
+    ok(f.fields[2].kind == "select" && f.fields[2].options.single().label == "Discord", "форма: список")
+    println("EXTRA OK")
 }
