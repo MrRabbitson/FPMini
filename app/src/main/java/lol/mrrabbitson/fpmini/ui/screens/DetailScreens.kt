@@ -1,6 +1,10 @@
 package lol.mrrabbitson.fpmini.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -62,7 +66,7 @@ fun OrderScreen(repo: Repository, id: String, onBack: () -> Unit, onChat: (node:
     Column(Modifier.fillMaxSize().background(c.bg)) {
         TopBar("Заказ #$id", subtitle = state.data?.status, onBack = onBack)
         LoadBox(state) { o ->
-            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(12.dp)) {
+            LazyColumn(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.navigationBars), contentPadding = PaddingValues(12.dp)) {
                 o.buyer?.let { b ->
                     item {
                         Card {
@@ -107,7 +111,7 @@ fun LotScreen(repo: Repository, type: String, id: String, onBack: () -> Unit) {
     Column(Modifier.fillMaxSize().background(c.bg)) {
         TopBar(state.data?.categoryTitle ?: "Лот", subtitle = "Лот #$id", onBack = onBack)
         LoadBox(state) { lot ->
-            LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(12.dp)) {
+            LazyColumn(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.navigationBars), contentPadding = PaddingValues(12.dp)) {
                 item {
                     Card {
                         if (lot.params.isEmpty()) EmptyState("Нет данных о лоте")
@@ -147,7 +151,7 @@ fun NewTicketScreen(repo: Repository, snackbar: SnackbarHostState, onBack: () ->
     var category by remember { mutableStateOf<TicketCategory?>(null) }
     val cats = rememberLoad("ticket_cats") { repo.ticketCategories() }
 
-    Column(Modifier.fillMaxSize().background(c.bg).imePadding()) {
+    Column(Modifier.fillMaxSize().background(c.bg).windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))) {
         TopBar(
             "Новая заявка",
             subtitle = category?.name ?: "Выберите тему",

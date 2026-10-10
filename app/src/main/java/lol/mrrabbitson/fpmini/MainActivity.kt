@@ -63,6 +63,7 @@ import lol.mrrabbitson.fpmini.auto.Notifier
 import lol.mrrabbitson.fpmini.ui.screens.AutomationScreen
 import lol.mrrabbitson.fpmini.ui.screens.ChatScreen
 import lol.mrrabbitson.fpmini.ui.screens.ChatsScreen
+import androidx.compose.ui.platform.LocalContext
 import lol.mrrabbitson.fpmini.ui.screens.LoginGate
 import lol.mrrabbitson.fpmini.ui.screens.LoginScreen
 import lol.mrrabbitson.fpmini.ui.screens.LotScreen
@@ -73,6 +74,7 @@ import lol.mrrabbitson.fpmini.ui.screens.SalesScreen
 import lol.mrrabbitson.fpmini.ui.screens.SettingsScreen
 import lol.mrrabbitson.fpmini.ui.screens.SupportScreen
 import lol.mrrabbitson.fpmini.ui.screens.TicketScreen
+import lol.mrrabbitson.fpmini.ui.screens.UserScreen
 import lol.mrrabbitson.fpmini.ui.theme.Ym
 import lol.mrrabbitson.fpmini.ui.theme.YmTheme
 
@@ -168,6 +170,26 @@ private fun MainUi(app: App, intent: Intent?, consumeIntent: () -> Unit) {
     }
 
     val openChat: (String, String) -> Unit = { node, name -> nav.navigate("chat/$node?name=${Uri.encode(name)}") }
+    val ctx = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    // ссылки из чата: страницы FunPay открываются внутри приложения, сторонние сайты — в браузере
+    val openLink: (String) -> Unit = link@{ url ->
+        val u = Uri.parse(url)
+        if ((u.host ?: "").endsWith("funpay.com")) {
+            val path = u.path.orEmpty()
+            Regex("/orders/([A-Za-z0-9]+)").find(path)?.let { nav.navigate("order/${it.groupValues[1]}"); return@link }
+            Regex("/users/(\\d+)").find(path)?.let { nav.navigate("user/${it.groupValues[1]}"); return@link }
+            if (path.contains("/offer")) {
+                val id = u.getQueryParameter("id")
+                if (id != null) { nav.navigate("lot/${if (path.startsWith("/chips")) "chips" else "lots"}/$id"); return@link }
+            }
+            u.getQueryParameter("node")?.let { nav.navigate("chat/$it?name="); return@link }
+            scope.launch { snackbar.showSnackbar("Эта страница FunPay пока не открывается в приложении") }
+            return@link
+        }
+        runCatching { ctx.startActivity(Intent(Intent.ACTION_VIEW, u).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+    }
 
     Scaffold(
         containerColor = c.bg,
@@ -200,6 +222,16 @@ private fun MainUi(app: App, intent: Intent?, consumeIntent: () -> Unit) {
                     title = e.arguments?.getString("name").orEmpty().ifBlank { "Чат" },
                     snackbar = snackbar,
                     onBack = { nav.popBackStack() },
+                    onLink = openLink,
+                    onUser = { nav.navigate("user/$it") },
+                )
+            }
+            composable("user/{id}", arguments = listOf(navArgument("id") { type = NavType.IntType })) { e ->
+                UserScreen(
+                    app.repo, e.arguments?.getInt("id") ?: 0,
+                    onBack = { nav.popBackStack() },
+                    onChat = openChat,
+                    onLot = { t, id -> nav.navigate("lot/$t/$id") },
                 )
             }
             composable(

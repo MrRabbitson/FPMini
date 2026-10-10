@@ -1,6 +1,10 @@
 package lol.mrrabbitson.fpmini.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -113,7 +117,7 @@ fun TicketScreen(repo: Repository, id: String, title: String, snackbar: Snackbar
     var text by rememberSaveable(id) { mutableStateOf("") }
     var sending by remember { mutableStateOf(false) }
 
-    Column(Modifier.fillMaxSize().background(c.bg).imePadding()) {
+    Column(Modifier.fillMaxSize().background(c.bg).windowInsetsPadding(WindowInsets.navigationBars.union(WindowInsets.ime))) {
         TopBar(state.data?.title ?: title, subtitle = "Заявка #$id" + (state.data?.status?.let { " · $it" } ?: ""), onBack = onBack)
         Box(Modifier.weight(1f)) {
             LoadBox(state) { t ->

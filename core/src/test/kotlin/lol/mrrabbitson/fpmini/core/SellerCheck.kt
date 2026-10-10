@@ -39,6 +39,17 @@ private val CHAT = """
   <div class="chat-msg-body"><div class="chat-msg-text">Покупатель оплатил заказ #ABC123.</div></div>
  </div>
  <div class="chat-msg-item" id="message-104"><a class="chat-img-link" href="/img/chat/1.png"><img src="/img/chat/1_s.png"></a></div>
+ <div class="chat-msg-item chat-msg-with-head" id="message-105">
+  <div class="media-heading"><a href="https://funpay.com/users/42/" class="chat-msg-author-link">Buyer1</a></div>
+  <div class="chat-msg-body"><div class="chat-msg-text">строка 1
+строка 2
+
+https://example.com/x</div></div>
+ </div>
+ <div class="chat-msg-item chat-msg-with-head" id="message-106">
+  <div class="media-heading"><div class="media-user-name">FunPay</div></div>
+  <div class="chat-msg-body"><div class="chat-msg-text">Покупатель <a href="https://funpay.com/users/42/">Buyer1</a> оплатил заказ <a href="https://funpay.com/orders/ABC123/">#ABC123</a>.</div></div>
+ </div>
 </div></body></html>
 """
 
@@ -103,12 +114,16 @@ fun main() {
 
     val chat = SellerParser.chat(CHAT, "123456")
     ok(chat.interlocutor?.id == 42 && chat.interlocutor?.isOnline == true, "чат: собеседник")
-    ok(chat.messages.size == 5, "чат: 5 сообщений")
+    ok(chat.messages.size == 7, "чат: 7 сообщений")
     ok(chat.messages[0].text == "Привет\nесть?" && chat.messages[0].authorId == 42, "чат: текст/автор")
     ok(chat.messages[1].authorId == 42 && chat.messages[1].time == "10 октября, 14:01:55", "чат: продолжение группы")
     ok(chat.messages[2].authorId == 7, "чат: моё сообщение")
     ok(chat.messages[3].authorId == 0 && chat.messages[3].authorName == "FunPay", "чат: системное")
     ok(chat.messages[4].imageUrl == "https://funpay.com/img/chat/1.png", "чат: картинка")
+    ok(chat.messages[5].text == "строка 1\nстрока 2\n\nhttps://example.com/x", "чат: переносы строк: ${chat.messages[5].text}")
+    val sys = chat.messages[6]
+    ok(sys.authorId == 0 && sys.links.map { it.text } == listOf("Buyer1", "#ABC123") && sys.links[1].url == "https://funpay.com/orders/ABC123/", "чат: ссылки в оповещении")
+    ok(sys.text == "Покупатель Buyer1 оплатил заказ #ABC123.", "чат: текст оповещения")
 
     val orders = SellerParser.orders(ORDERS)
     ok(orders.size == 3, "продажи: 3 заказа")

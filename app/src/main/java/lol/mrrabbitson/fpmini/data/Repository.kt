@@ -304,4 +304,11 @@ class Repository(private val client: FpClient, private val prefs: Prefs) {
         }
         return json?.optJSONObject("action")?.optString("url")?.trimEnd('/')?.substringAfterLast('/')?.ifBlank { null }
     }
+
+    // ---------- профиль другого пользователя ----------
+
+    suspend fun profile(id: Int): ProfilePage {
+        val html = client.get("/users/$id/")
+        return withContext(Dispatchers.Default) { Parser.profile(html, id) }
+    }
 }

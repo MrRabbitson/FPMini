@@ -55,14 +55,17 @@ object Parser {
         else -> url
     }
 
-    /** Текст с сохранением переносов строк (<br>, <p>, <div>). */
-    fun textWithBreaks(el: Element?): String {
+    /**
+     * Текст с сохранением переносов строк (<br>, <p>, <div>).
+     * [preserveNewlines] — сохранять и обычные переводы строк в тексте (сообщения чата хранят их как есть).
+     */
+    fun textWithBreaks(el: Element?, preserveNewlines: Boolean = false): String {
         if (el == null) return ""
         val sb = StringBuilder()
         fun walk(e: Element) {
             for (n in e.childNodes()) {
                 when (n) {
-                    is TextNode -> sb.append(n.text())
+                    is TextNode -> sb.append(if (preserveNewlines) n.wholeText.replace("\r", "") else n.text())
                     is Element -> {
                         if (n.tagName() == "br") { sb.append('\n'); continue }
                         val block = n.isBlock
@@ -75,7 +78,7 @@ object Parser {
         }
         walk(el)
         return sb.toString()
-            .lines().joinToString("\n") { it.trim() }
+            .lines().joinToString("\n") { it.replace(Regex("[ \t\u00a0]+"), " ").trim() }
             .replace(Regex("\n{3,}"), "\n\n")
             .trim()
     }

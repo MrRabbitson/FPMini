@@ -1,6 +1,11 @@
 package lol.mrrabbitson.fpmini.ui.screens
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.union
+import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.ime
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
@@ -66,7 +71,7 @@ fun SettingsScreen(app: App, onBack: () -> Unit) {
 
     Column(Modifier.fillMaxSize().background(c.bg)) {
         TopBar("Настройки", onBack = onBack)
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(12.dp)) {
+        Column(Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.navigationBars).verticalScroll(rememberScrollState()).padding(12.dp)) {
 
             SectionLabel("Аккаунт", Modifier.padding(start = 4.dp, bottom = 6.dp))
             Card {

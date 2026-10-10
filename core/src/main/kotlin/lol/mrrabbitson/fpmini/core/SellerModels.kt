@@ -18,7 +18,10 @@ data class ChatMessage(
     val text: String,
     val time: String,
     val imageUrl: String?,
+    val links: List<MsgLink> = emptyList(),   // ссылки внутри текста (ник, заказ, адреса)
 )
+
+data class MsgLink(val text: String, val url: String)
 
 data class ChatPage(
     val node: String,

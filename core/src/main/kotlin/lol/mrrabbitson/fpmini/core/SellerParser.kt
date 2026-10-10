@@ -47,13 +47,18 @@ object SellerParser {
             }
             item.selectFirst(".chat-msg-date")?.let { d -> time = d.attr("title").ifBlank { d.text() }.trim() }
             val img = item.selectFirst("a.chat-img-link")?.attr("href")?.let { Parser.absolute(it) }
+            val textEl = item.selectFirst(".chat-msg-text")
             out += ChatMessage(
                 id = id,
                 authorId = authorId,
                 authorName = authorName,
-                text = Parser.textWithBreaks(item.selectFirst(".chat-msg-text")),
+                text = Parser.textWithBreaks(textEl, preserveNewlines = true),
                 time = time,
                 imageUrl = img,
+                links = textEl?.select("a[href]")?.mapNotNull { a ->
+                    val t = a.text().trim()
+                    if (t.isEmpty()) null else MsgLink(t, Parser.absolute(a.attr("href")))
+                }.orEmpty(),
             )
         }
         return out
