@@ -131,22 +131,31 @@ private fun Root(app: App, intent: Intent?, consumeIntent: () -> Unit) {
     var busy by remember { mutableStateOf(false) }
     var loginError by remember { mutableStateOf<String?>(null) }
 
-    fun tryKey(key: String) {
-        busy = true; loginError = null
+    /** Проверить ключ: FunPay должен открыть аккаунт (после 2ФА). Ключ сохраняется только при успехе. */
+    suspend fun verify(key: String): Boolean {
         app.prefs.setGoldenKey(key)
         app.repo.clear()
+        return try {
+            app.repo.me(force = true); true
+        } catch (e: Exception) {
+            app.prefs.setGoldenKey(null); false
+        }
+    }
+
+    fun tryKey(key: String) {
+        busy = true; loginError = null
         scope.launch {
-            try {
-                app.repo.me(force = true)
-            } catch (e: Exception) {
-                app.prefs.setGoldenKey(null)
-                loginError = "FunPay не принял вход: ${e.message}"
-            } finally { busy = false }
+            if (!verify(key)) loginError = "FunPay не принял ключ"
+            busy = false
         }
     }
 
     when {
-        webLogin -> LoginScreen(onClose = { webLogin = false }, onGoldenKey = { k -> webLogin = false; tryKey(k) })
+        webLogin -> LoginScreen(
+            onClose = { webLogin = false },
+            verify = { k -> verify(k) },
+            onSuccess = { webLogin = false },
+        )
         !account.loggedIn || busy -> LoginGate(onWebLogin = { webLogin = true }, onKey = ::tryKey, busy = busy, error = loginError)
         else -> MainUi(app, intent, consumeIntent)
     }

@@ -49,23 +49,37 @@ class FpClient(private val prefs: Prefs) {
 
     private fun url(path: String) = if (path.startsWith("http")) path else BASE + path
 
+    /**
+     * Выполнить запрос. На 429 (слишком много запросов) и 502/503 — ждём и повторяем,
+     * учитывая Retry-After, до 5 попыток.
+     */
     private fun exec(req: Request): String {
-        val resp = try {
-            http.newCall(req).execute()
-        } catch (e: IOException) {
-            throw FpException("Нет соединения с FunPay")
-        }
-        return resp.use {
-            val body = it.body?.string().orEmpty()
+        var attempt = 0
+        while (true) {
+            val resp = try {
+                http.newCall(req).execute()
+            } catch (e: IOException) {
+                if (attempt < 2) { attempt++; Thread.sleep(1500L * attempt); continue }
+                throw FpException("Нет соединения с FunPay")
+            }
+            val code = resp.code
+            val retryAfter = resp.header("Retry-After")?.trim()?.toLongOrNull()
+            val body = resp.use { it.body?.string().orEmpty() }
+            if ((code == 429 || code == 502 || code == 503) && attempt < 5) {
+                attempt++
+                val wait = (retryAfter?.times(1000) ?: (2000L shl (attempt - 1))).coerceIn(1000L, 30_000L)
+                Thread.sleep(wait)
+                continue
+            }
             when {
                 body.contains("challenge-platform") || body.contains("cf-browser-verification") ->
                     throw FpException("FunPay просит проверку браузера, попробуйте позже", 403)
-                it.code == 428 -> throw FpException("FunPay требует обновить сессию", 428)
-                it.code == 429 -> throw FpException("Слишком много запросов, подождите", 429)
-                it.code == 404 -> throw FpException("Не найдено", 404)
-                !it.isSuccessful -> throw FpException("FunPay ответил ошибкой ${it.code}", it.code)
+                code == 428 -> throw FpException("FunPay требует обновить сессию", 428)
+                code == 429 -> throw FpException("FunPay ограничил запросы, попробуйте через минуту", 429)
+                code == 404 -> throw FpException("Не найдено", 404)
+                code !in 200..299 -> throw FpException("FunPay ответил ошибкой $code", code)
             }
-            body
+            return body
         }
     }
 

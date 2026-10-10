@@ -81,7 +81,7 @@ fun OrderScreen(repo: Repository, id: String, onBack: () -> Unit, onChat: (node:
                                 PrimaryButton("Написать") {
                                     val node = o.chatNode
                                     if (node != null) onChat(node, b.name)
-                                    else b.id?.let { uid -> scope.launch { onChat(repo.nodeWith(uid), b.name) } }
+                                    else b.id?.let { uid -> scope.launch { runCatching { repo.nodeWith(uid) }.onSuccess { onChat(it, b.name) } } }
                                 }
                             }
                         }
@@ -164,7 +164,7 @@ fun NewTicketScreen(repo: Repository, snackbar: SnackbarHostState, onBack: () ->
         if (cat == null) {
             LoadBox(cats) { list ->
                 LazyColumn(Modifier.fillMaxSize()) {
-                    if (list.isEmpty()) item { EmptyState("Темы не загрузились", "Попробуйте позже.") }
+                    if (list.isEmpty()) item { EmptyState("Темы не загрузились") }
                     items(list, key = { it.id }) { t ->
                         Text(
                             t.name, color = c.text, fontSize = 15.sp,

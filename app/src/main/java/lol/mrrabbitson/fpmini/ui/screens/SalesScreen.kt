@@ -199,7 +199,7 @@ fun SalesScreen(repo: Repository, onOrder: (id: String) -> Unit) {
                                 modifier = Modifier.padding(start = 16.dp, top = 10.dp, bottom = 4.dp),
                             )
                         }
-                        if (shown.isEmpty()) item { EmptyState("Ничего не найдено", "Попробуйте другой период или запрос.") }
+                        if (shown.isEmpty()) item { EmptyState("Ничего не найдено") }
                         items(shown, key = { it.id }) { o ->
                             OrderRow(o) { onOrder(o.id) }
                             HorizontalDivider(color = c.divider, modifier = Modifier.padding(start = 16.dp))

@@ -158,12 +158,6 @@ fun SettingsScreen(app: App) {
                     modifier = Modifier.fillMaxWidth().clickable { prefs.updateTheme { ThemeSettings() } }.padding(14.dp),
                 )
             }
-            Spacer(Modifier.height(16.dp))
-            Text(
-                "FPMini — неофициальный бесплатный клиент для продавцов FunPay. Не связан с FunPay. " +
-                    "Ключ входа хранится только на этом телефоне и отправляется только на funpay.com.",
-                color = c.textMuted, fontSize = 12.sp, modifier = Modifier.padding(horizontal = 4.dp),
-            )
             Spacer(Modifier.height(24.dp))
         }
     }

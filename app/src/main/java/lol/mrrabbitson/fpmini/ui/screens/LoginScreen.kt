@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.material.icons.Icons
@@ -33,59 +34,46 @@ import androidx.compose.ui.viewinterop.AndroidView
 import lol.mrrabbitson.fpmini.ui.theme.Ym
 
 /**
- * Вход на настоящем сайте funpay.com во встроенном браузере.
- * Логин и пароль вводятся на странице FunPay, приложение их не видит —
- * после входа берём только куку golden_key.
- */
-/**
- * Вход на настоящем сайте funpay.com во встроенном браузере.
- * Пароль и код 2ФА вводятся на странице FunPay — приложение их не видит.
- * Раз в 3 секунды проверяем, появилась ли кука golden_key (вход завершён, в том числе после 2ФА).
+ * Вход на сайте funpay.com во встроенном браузере (пароль и 2ФА вводятся на странице FunPay).
+ * Раз в 3 секунды: если есть golden_key и мы уже не на страницах входа — проверяем, что FunPay
+ * действительно открыл аккаунт. Пока 2ФА не пройдена, проверка не проходит, и окно остаётся открытым.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
-fun LoginScreen(onClose: () -> Unit, onGoldenKey: (String) -> Unit) {
+fun LoginScreen(onClose: () -> Unit, verify: suspend (String) -> Boolean, onSuccess: () -> Unit) {
     val c = Ym.colors
-    var done by remember { mutableStateOf(false) }
-    var hint by remember { mutableStateOf("Войдите в аккаунт FunPay. Если включена двухфакторная защита — введите код, приложение подождёт.") }
+    var currentUrl by remember { mutableStateOf("") }
+    var checking by remember { mutableStateOf(false) }
 
-    fun check(): Boolean {
-        if (done) return true
-        val cm = CookieManager.getInstance()
-        cm.flush()
-        val cookies = cm.getCookie("https://funpay.com").orEmpty()
-        val key = Regex("(?:^|;\\s*)golden_key=([^;]+)").find(cookies)?.groupValues?.get(1)
-        if (!key.isNullOrBlank() && key.length >= 16) {
-            done = true
-            onGoldenKey(key)
-            return true
-        }
-        return false
+    fun onAuthPage(url: String): Boolean {
+        val u = url.lowercase()
+        return u.isBlank() || u.contains("/account/") || u.contains("login") || u.contains("2fa") ||
+            u.contains("otp") || u.contains("verif") || u.contains("confirm") || u.contains("auth")
     }
 
-    // проверка раз в 3 секунды, пока экран открыт
     androidx.compose.runtime.LaunchedEffect(Unit) {
-        var ticks = 0
-        while (!done) {
+        while (true) {
             kotlinx.coroutines.delay(3_000)
-            if (check()) break
-            ticks++
-            if (ticks == 20) hint = "Жду завершения входа… Если FunPay просит код из письма или приложения — введите его на странице."
+            if (onAuthPage(currentUrl)) continue
+            val cm = CookieManager.getInstance()
+            cm.flush()
+            val key = Regex("(?:^|;\\s*)golden_key=([^;]+)").find(cm.getCookie("https://funpay.com").orEmpty())?.groupValues?.get(1)
+            if (key.isNullOrBlank() || key.length < 16) continue
+            checking = true
+            val ok = verify(key)
+            checking = false
+            if (ok) { onSuccess(); break }
         }
     }
 
     Column(Modifier.fillMaxSize().background(c.bg)) {
         Row(Modifier.fillMaxWidth().statusBarsPadding().padding(4.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onClose) { Icon(Icons.Filled.Close, "Закрыть", tint = c.text) }
-            Column {
-                Text("Вход на FunPay", color = c.text, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text("funpay.com", color = c.textMuted, fontSize = 12.sp)
-            }
+            Text("Вход на FunPay", color = c.text, fontWeight = FontWeight.Bold, fontSize = 16.sp, modifier = Modifier.weight(1f))
+            if (checking) androidx.compose.material3.CircularProgressIndicator(
+                Modifier.padding(end = 12.dp).size(18.dp), color = c.accent, strokeWidth = 2.dp,
+            )
         }
-        Text(
-            hint, color = c.textMuted, fontSize = 12.sp,
-            modifier = Modifier.fillMaxWidth().background(c.section).padding(horizontal = 14.dp, vertical = 8.dp),
-        )
         AndroidView(
             modifier = Modifier.fillMaxSize().navigationBarsPadding().imePadding(),
             factory = { ctx ->
@@ -96,7 +84,7 @@ fun LoginScreen(onClose: () -> Unit, onGoldenKey: (String) -> Unit) {
                     settings.domStorageEnabled = true
                     cm.setAcceptThirdPartyCookies(this, true)
                     webViewClient = object : WebViewClient() {
-                        override fun onPageFinished(view: WebView, url: String) { check() }
+                        override fun onPageFinished(view: WebView, url: String) { currentUrl = url }
                     }
                     loadUrl("https://funpay.com/account/login")
                 }
@@ -117,7 +105,7 @@ fun LoginGate(onWebLogin: () -> Unit, onKey: (String) -> Unit, busy: Boolean, er
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("FPMini", color = c.text, fontWeight = FontWeight.Black, fontSize = 30.sp)
-            Text("Неофициальный клиент FunPay для продавцов", color = c.textMuted, fontSize = 13.sp)
+            Text("Клиент FunPay для продавцов", color = c.textMuted, fontSize = 13.sp)
             androidx.compose.foundation.layout.Spacer(Modifier.padding(16.dp))
             lol.mrrabbitson.fpmini.ui.PrimaryButton(if (busy) "Проверяю вход…" else "Войти через funpay.com", Modifier.fillMaxWidth(), enabled = !busy, onClick = onWebLogin)
             androidx.compose.foundation.layout.Spacer(Modifier.padding(4.dp))
@@ -138,11 +126,6 @@ fun LoginGate(onWebLogin: () -> Unit, onKey: (String) -> Unit, busy: Boolean, er
                 androidx.compose.foundation.layout.Spacer(Modifier.padding(4.dp))
                 Text(error, color = androidx.compose.ui.graphics.Color(0xFFE5534B), fontSize = 13.sp)
             }
-            androidx.compose.foundation.layout.Spacer(Modifier.padding(12.dp))
-            Text(
-                "Пароль вводится на странице FunPay — приложение его не видит. После входа сохраняется только ключ сессии, и только на этом телефоне.",
-                color = c.textMuted, fontSize = 12.sp, textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            )
         }
     }
 }

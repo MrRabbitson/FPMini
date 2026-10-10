@@ -85,7 +85,7 @@ fun UserScreen(
                         }
                         HorizontalDivider(color = c.divider)
                         PrimaryButton("Написать", Modifier.fillMaxWidth().padding(10.dp)) {
-                            scope.launch { onChat(repo.nodeWith(id), p.user.name) }
+                            scope.launch { runCatching { repo.nodeWith(id) }.onSuccess { onChat(it, p.user.name) } }
                         }
                     }
                 }

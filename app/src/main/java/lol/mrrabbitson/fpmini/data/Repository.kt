@@ -325,14 +325,16 @@ class Repository(private val client: FpClient, private val prefs: Prefs) {
     // ---------- вся история продаж ----------
 
     @Volatile private var ordersCache: Pair<Long, List<Order>>? = null
+    private val ordersLock = Mutex()
 
     /**
      * Все продажи (страница за страницей, как кнопка «Показать ещё» на сайте).
      * [onProgress] — сколько уже загружено. Кэш 5 минут.
      */
-    suspend fun allOrders(force: Boolean = false, maxPages: Int = 60, onProgress: (Int) -> Unit = {}): List<Order> {
+    suspend fun allOrders(force: Boolean = false, maxPages: Int = 60, onProgress: (Int) -> Unit = {}): List<Order> = ordersLock.withLock {
+        // одна загрузка на всё приложение: профиль и продажи не грузят историю параллельно
         val cached = ordersCache
-        if (!force && cached != null && System.currentTimeMillis() - cached.first < 5 * 60_000) return cached.second
+        if (!force && cached != null && System.currentTimeMillis() - cached.first < 5 * 60_000) return@withLock cached.second
         val out = linkedMapOf<String, Order>()
         var html = client.get("/orders/trade")
         for (page in 1..maxPages) {
@@ -341,11 +343,17 @@ class Repository(private val client: FpClient, private val prefs: Prefs) {
             onProgress(out.size)
             val token = p.continueToken ?: break
             if (p.orders.isEmpty()) break
-            html = client.post("/orders/trade", listOf("continue" to token), "${FpClient.BASE}/orders/trade")
+            kotlinx.coroutines.delay(700) // пауза между страницами, чтобы FunPay не ограничивал запросы
+            html = try {
+                client.post("/orders/trade", listOf("continue" to token), "${FpClient.BASE}/orders/trade")
+            } catch (e: FpException) {
+                if (out.isEmpty()) throw e
+                break // что успели загрузить — показываем
+            }
         }
         val list = out.values.toList()
         ordersCache = System.currentTimeMillis() to list
-        return list
+        list
     }
 
     // ---------- редактирование лота ----------

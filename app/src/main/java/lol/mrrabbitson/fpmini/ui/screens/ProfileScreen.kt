@@ -180,7 +180,6 @@ fun MyProfileScreen(repo: Repository, snackbar: SnackbarHostState, onLot: (offer
                                         color = c.accent, fontSize = 13.sp,
                                         modifier = Modifier.clickable { showAllUnlocks = !showAllUnlocks }.padding(vertical = 6.dp),
                                     )
-                                    Text("Деньги за закрытый заказ FunPay обычно держит около 48 часов.", color = c.textMuted, fontSize = 11.sp)
                                 }
                             }
                         }

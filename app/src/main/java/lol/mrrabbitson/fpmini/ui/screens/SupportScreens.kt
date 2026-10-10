@@ -87,7 +87,7 @@ fun SupportScreen(repo: Repository, onOpen: (id: String, title: String) -> Unit,
         LoadBox(state) { list ->
             PullToRefreshBox(isRefreshing = state.loading, onRefresh = { state.refresh() }, modifier = Modifier.fillMaxSize()) {
                 LazyColumn(Modifier.fillMaxSize()) {
-                    if (list.isEmpty()) item { EmptyState("Заявок нет", "Новую заявку можно создать кнопкой «+» вверху.") }
+                    if (list.isEmpty()) item { EmptyState("Заявок нет") }
                     items(list, key = { it.id }) { t ->
                         Column(
                             Modifier.fillMaxWidth().clickable { onOpen(t.id, t.title) }.padding(horizontal = 16.dp, vertical = 11.dp),

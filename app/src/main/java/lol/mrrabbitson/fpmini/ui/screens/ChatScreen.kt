@@ -193,7 +193,7 @@ fun ChatScreen(
         Box(Modifier.weight(1f).fillMaxWidth().background(c.section)) {
             LoadBox(state) { page ->
                 val rows = remember(page.messages, account.userId) { buildRows(page.messages, account.userId) }
-                if (rows.isEmpty()) EmptyState("Сообщений пока нет", "Напишите первым.")
+                if (rows.isEmpty()) EmptyState("Сообщений пока нет")
                 else {
                     val list = rememberLazyListState()
                     val lastId = page.messages.lastOrNull()?.id

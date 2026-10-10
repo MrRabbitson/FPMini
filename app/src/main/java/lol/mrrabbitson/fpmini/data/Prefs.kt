@@ -10,7 +10,7 @@ import org.json.JSONObject
 enum class ThemeMode { SYSTEM, LIGHT, DARK }
 
 data class ThemeSettings(
-    val mode: ThemeMode = ThemeMode.SYSTEM,
+    val mode: ThemeMode = ThemeMode.DARK,
     val amoled: Boolean = false,
     val accent: Long = DEFAULT_ACCENT,
     val radius: Int = 10,
@@ -57,7 +57,7 @@ class Prefs(context: Context) {
     val theme: StateFlow<ThemeSettings> = _theme.asStateFlow()
 
     private fun readTheme() = ThemeSettings(
-        mode = runCatching { ThemeMode.valueOf(sp.getString("t_mode", null) ?: "SYSTEM") }.getOrDefault(ThemeMode.SYSTEM),
+        mode = runCatching { ThemeMode.valueOf(sp.getString("t_mode", null) ?: "DARK") }.getOrDefault(ThemeMode.DARK),
         amoled = sp.getBoolean("t_amoled", false),
         accent = sp.getLong("t_accent", ThemeSettings.DEFAULT_ACCENT),
         radius = sp.getInt("t_radius", 10),

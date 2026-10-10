@@ -98,13 +98,13 @@ fun AutomationScreen(prefs: Prefs, repo: Repository, log: EventLog, snackbar: Sn
                 Card {
                     SwitchRow(
                         "Работа в фоне",
-                        if (a.background) status else "Выключено — автоответы и поднятие не работают",
+                        if (a.background) status else "Выключено",
                         a.background, ::setBackground,
                     )
                     if (a.background && batteryRestricted) {
                         HorizontalDivider(color = c.divider)
                         Text(
-                            "Android может останавливать фон для экономии батареи. Нажмите, чтобы разрешить работу без ограничений.",
+                            "Снять ограничение батареи для работы в фоне",
                             color = Color(0xFFE59A1D), fontSize = 12.sp,
                             modifier = Modifier.clickable {
                                 runCatching {
@@ -121,7 +121,7 @@ fun AutomationScreen(prefs: Prefs, repo: Repository, log: EventLog, snackbar: Sn
             item {
                 SectionLabel("Поднятие лотов", Modifier.padding(start = 4.dp, bottom = 6.dp))
                 Card {
-                    SwitchRow("Автоподнятие", "Поднимает все ваши лоты, когда FunPay разрешает", a.raise) { v ->
+                    SwitchRow("Автоподнятие", null, a.raise) { v ->
                         prefs.updateAuto { it.copy(raise = v) }
                     }
                     HorizontalDivider(color = c.divider)
@@ -161,7 +161,7 @@ fun AutomationScreen(prefs: Prefs, repo: Repository, log: EventLog, snackbar: Sn
             item {
                 SectionLabel("Автоответы", Modifier.padding(start = 4.dp, bottom = 6.dp))
                 Card {
-                    SwitchRow("Приветствие", "Новому покупателю, если вы ещё не писали в этот чат", a.greet) { v ->
+                    SwitchRow("Приветствие новым покупателям", null, a.greet) { v ->
                         prefs.updateAuto { it.copy(greet = v) }
                     }
                     if (a.greet) {
@@ -175,7 +175,7 @@ fun AutomationScreen(prefs: Prefs, repo: Repository, log: EventLog, snackbar: Sn
                         )
                     }
                     HorizontalDivider(color = c.divider)
-                    SwitchRow("Ответы по ключевым словам", "Если сообщение содержит слово — отправить ответ", a.rulesEnabled) { v ->
+                    SwitchRow("Ответы по ключевым словам", null, a.rulesEnabled) { v ->
                         prefs.updateAuto { it.copy(rulesEnabled = v) }
                     }
                     a.rules.forEach { r ->
